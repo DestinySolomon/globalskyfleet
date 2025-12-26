@@ -8,7 +8,7 @@
 
 @section('content')
     <!-- Login Section -->
-    <section class="login-hero py-5">
+    <section class="login-hero py-5" style="padding-top: 100px !important;">
         <div class="container">
             <div class="row justify-content-center align-items-center">
                 <!-- Left Content (Hidden on Mobile) -->
@@ -48,12 +48,25 @@
                             <p class="text-muted">Welcome back! Please login to your account.</p>
                         </div>
                         
-                        <form id="loginForm" method="POST" action="{{ route('login.submit') }}">
+                        <!-- Display session messages -->
+                        @if(session('success'))
+                            <div class="alert alert-success">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+                        
+                        @if(session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+                        
+                        <form id="loginForm" method="POST" action="{{ route('login') }}">
                             @csrf
                             <div class="mb-4">
                                 <label for="email" class="form-label fw-semibold text-navy mb-2">Email Address</label>
                                 <input type="email" 
-                                       class="form-control form-control-custom" 
+                                       class="form-control form-control-custom @error('email') is-invalid @enderror" 
                                        id="email" 
                                        name="email"
                                        value="{{ old('email') }}"
@@ -67,7 +80,7 @@
                             <div class="mb-4">
                                 <label for="password" class="form-label fw-semibold text-navy mb-2">Password</label>
                                 <input type="password" 
-                                       class="form-control form-control-custom" 
+                                       class="form-control form-control-custom @error('password') is-invalid @enderror" 
                                        id="password" 
                                        name="password"
                                        placeholder="••••••••" 
@@ -79,7 +92,7 @@
                             
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                                    <input class="form-check-input" type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
                                     <label class="form-check-label text-muted ms-2" for="remember">
                                         Remember me
                                     </label>
@@ -103,21 +116,7 @@
                             </p>
                         </div>
                         
-                        <div class="mt-5 pt-5 border-top">
-                            <p class="text-center text-muted mb-4">Or continue with</p>
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <a href="{{ route('social.login', 'google') }}" class="social-btn w-100 d-flex align-items-center justify-content-center text-decoration-none">
-                                        <i class="ri-google-fill me-2"></i> Google
-                                    </a>
-                                </div>
-                                <div class="col-6">
-                                    <a href="{{ route('social.login', 'microsoft') }}" class="social-btn w-100 d-flex align-items-center justify-content-center text-decoration-none">
-                                        <i class="ri-microsoft-fill me-2"></i> Microsoft
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Removed social login section completely -->
                     </div>
                 </div>
             </div>
@@ -156,21 +155,8 @@
                 const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Signing in...';
                 submitBtn.disabled = true;
-                
-                // The form will submit normally through Laravel
-                // In a real application with AJAX, you would handle the response here
             });
         }
-        
-        // Social login buttons
-        const socialButtons = document.querySelectorAll('.social-btn');
-        socialButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const platform = this.textContent.trim();
-                console.log(`Sign in with ${platform} clicked`);
-                // In a real application, this would redirect to OAuth provider
-            });
-        });
         
         // Remember me functionality (client-side)
         const rememberCheckbox = document.getElementById('remember');

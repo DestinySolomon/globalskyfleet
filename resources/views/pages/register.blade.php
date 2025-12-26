@@ -48,12 +48,25 @@
                             <p class="text-muted">Join us to start shipping worldwide.</p>
                         </div>
                         
-                        <form id="registerForm" method="POST" action="{{ route('register.submit') }}">
+                        <!-- Display session messages -->
+                        @if(session('success'))
+                            <div class="alert alert-success">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+                        
+                        @if(session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+                        
+                        <form id="registerForm" method="POST" action="{{ route('register') }}">
                             @csrf
                             <div class="mb-4">
                                 <label for="name" class="form-label fw-semibold text-navy mb-2">Full Name</label>
                                 <input type="text" 
-                                       class="form-control form-control-custom" 
+                                       class="form-control form-control-custom @error('name') is-invalid @enderror" 
                                        id="name" 
                                        name="name"
                                        value="{{ old('name') }}"
@@ -67,7 +80,7 @@
                             <div class="mb-4">
                                 <label for="email" class="form-label fw-semibold text-navy mb-2">Email Address</label>
                                 <input type="email" 
-                                       class="form-control form-control-custom" 
+                                       class="form-control form-control-custom @error('email') is-invalid @enderror" 
                                        id="email" 
                                        name="email"
                                        value="{{ old('email') }}"
@@ -82,7 +95,7 @@
                                 <label for="password" class="form-label fw-semibold text-navy mb-2">Password</label>
                                 <div class="input-group input-group-custom">
                                     <input type="password" 
-                                           class="form-control form-control-custom" 
+                                           class="form-control form-control-custom @error('password') is-invalid @enderror" 
                                            id="password" 
                                            name="password"
                                            placeholder="••••••••" 
@@ -133,7 +146,7 @@
                             <div class="mb-4">
                                 <label for="phone" class="form-label fw-semibold text-navy mb-2">Phone Number (Optional)</label>
                                 <input type="tel" 
-                                       class="form-control form-control-custom" 
+                                       class="form-control form-control-custom @error('phone') is-invalid @enderror" 
                                        id="phone" 
                                        name="phone"
                                        value="{{ old('phone') }}"
@@ -144,7 +157,7 @@
                             </div>
                             
                             <div class="form-check mb-4">
-                                <input class="form-check-input" type="checkbox" id="terms" name="terms" {{ old('terms') ? 'checked' : '' }} required>
+                                <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox" id="terms" name="terms" {{ old('terms') ? 'checked' : '' }} required>
                                 <label class="form-check-label text-muted" for="terms">
                                     I agree to the <a href="{{ route('terms') }}" class="text-skyblue text-decoration-none">Terms of Service</a> and <a href="{{ route('privacy') }}" class="text-skyblue text-decoration-none">Privacy Policy</a>
                                 </label>
@@ -165,21 +178,7 @@
                             </p>
                         </div>
                         
-                        <div class="mt-5 pt-5 border-top">
-                            <p class="text-center text-muted mb-4">Or continue with</p>
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <a href="{{ route('social.login', 'google') }}" class="social-btn w-100 d-flex align-items-center justify-content-center text-decoration-none">
-                                        <i class="ri-google-fill me-2"></i> Google
-                                    </a>
-                                </div>
-                                <div class="col-6">
-                                    <a href="{{ route('social.login', 'microsoft') }}" class="social-btn w-100 d-flex align-items-center justify-content-center text-decoration-none">
-                                        <i class="ri-microsoft-fill me-2"></i> Microsoft
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Removed social login section completely -->
                     </div>
                 </div>
             </div>
@@ -345,21 +344,8 @@
                 const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Creating Account...';
                 submitBtn.disabled = true;
-                
-                // The form will submit normally through Laravel
             });
         }
-        
-        // Social login buttons
-        const socialButtons = document.querySelectorAll('.social-btn');
-        socialButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const platform = this.textContent.trim();
-                console.log(`Sign up with ${platform} clicked`);
-                // In a real application, this would redirect to OAuth provider
-            });
-        });
         
         // If success modal exists, show it
         const successModal = document.getElementById('successModal');
