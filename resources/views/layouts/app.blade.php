@@ -39,6 +39,8 @@
     @stack('styles')
 </head>
 <body>
+      <!-- Loading Overlay -->
+    @include('partials.loading-overlay')
     <!-- Top Navigation (Sub Navbar) -->
     @include('layouts.partials.top-nav')
     
@@ -59,5 +61,6 @@
     
     <!-- Additional Scripts -->
     @stack('scripts')
+      @include('partials.dashboard-button')
 </body>
 </html>

@@ -112,9 +112,9 @@
                 </form>
             </div>
             <div class="col-md-4 text-end">
-                <a href="{{ route('quote') }}" class="btn btn-primary">
-                    <i class="ri-add-line me-2"></i>Create New Shipment
-                </a>
+               <a href="{{ route('shipments.create') }}" class="btn btn-primary">
+    <i class="ri-add-line me-2"></i>Create New Shipment
+</a>
             </div>
         </div>
     </div>
@@ -304,9 +304,9 @@
             </div>
             <h5 class="text-muted mb-3">No shipments found</h5>
             <p class="text-muted mb-4">Create your first shipment to get started</p>
-            <a href="{{ route('quote') }}" class="btn btn-primary">
-                <i class="ri-add-line me-2"></i>Create Shipment
-            </a>
+            <a href="{{ route('shipments.create') }}" class="btn btn-primary">
+    <i class="ri-add-line me-2"></i>Create Shipment
+</a>
         </div>
         @endif
     </div>

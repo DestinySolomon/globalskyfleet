@@ -13,34 +13,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use App\Events\ShipmentStatusUpdated;
+use App\Events\ShipmentCreated;
 
 class ShipmentController extends Controller
 {
     /**
-     * Apply auth middleware to all methods except public tracking
-     */
-    public function __construct()
-    {
-        // $this->middleware(['auth', 'verified'])->except(['track', 'publicTracking']);
-        
-        // // Rate limiting for security
-        // $this->middleware('throttle:60,1')->only(['store', 'update', 'destroy']);
-        // $this->middleware('throttle:30,1')->only(['index', 'show']);
-    }
-
-    /**
      * Display a listing of the user's shipments
-     * 
-     * SECURITY FEATURES:
-     * - User can only see their own shipments
-     * - All queries are parameterized to prevent SQL injection
-     * - Input validation and sanitization
-     * - Activity logging
-     * - Rate limiting (throttle:30,1)
      */
     public function index(Request $request)
     {
-        // Validate input to prevent injection attacks
         $validator = Validator::make($request->all(), [
             'status' => ['nullable', 'string', Rule::in([
                 'all', 'pending', 'confirmed', 'picked_up', 'in_transit', 
@@ -63,7 +45,6 @@ class ShipmentController extends Controller
 
         $validated = $validator->validated();
         
-        // Start query - only user's shipments
         $query = Auth::user()->shipments()
             ->with(['senderAddress', 'recipientAddress', 'service'])
             ->select([
@@ -74,12 +55,10 @@ class ShipmentController extends Controller
                 'created_at', 'updated_at'
             ]);
 
-        // Apply status filter (security: using parameterized where clause)
         if (isset($validated['status']) && $validated['status'] !== 'all') {
             $query->where('status', $validated['status']);
         }
 
-        // Apply search filter (security: using parameterized like clauses)
         if (isset($validated['search']) && !empty(trim($validated['search']))) {
             $searchTerm = '%' . trim($validated['search']) . '%';
             $query->where(function($q) use ($searchTerm) {
@@ -95,15 +74,12 @@ class ShipmentController extends Controller
             });
         }
 
-        // Apply sorting (security: whitelisted columns)
         $sort = $validated['sort'] ?? 'created_at';
         $order = $validated['order'] ?? 'desc';
         $query->orderBy($sort, $order);
 
-        // Paginate results (security: limit results)
         $shipments = $query->paginate(20)->withQueryString();
 
-        // Log the access for security audit
         Log::channel('security')->info('User accessed shipment list', [
             'user_id' => Auth::id(),
             'ip' => $request->ip(),
@@ -115,40 +91,24 @@ class ShipmentController extends Controller
         return view('shipments.index', compact('shipments'));
     }
 
-    /**
-     * Show the form for creating a new shipment
-     * 
-     * SECURITY FEATURES:
-     * - CSRF protection via Laravel middleware
-     * - Only user's addresses are loaded
-     * - Service validation
-     */
     public function create()
     {
-        // Get user's addresses for dropdowns
         $addresses = Auth::user()->addresses()
-            ->whereIn('type', ['shipping', 'both'])
-            ->get(['id', 'name', 'type', 'address_line1', 'city', 'state', 'country', 'postal_code']);
+            ->where('type', 'shipping')
+            ->orWhere('type', 'both')
+            ->get();
         
-        // Get available services
-        $services = Service::where('is_active', true)->get(['id', 'name', 'description', 'estimated_days', 'base_price']);
+        $services = [
+            'express' => 'Express Delivery (1-3 days)',
+            'economy' => 'Economy Shipping (5-7 days)',
+            'standard' => 'Standard (3-5 days)',
+        ];
         
         return view('shipments.create', compact('addresses', 'services'));
     }
 
-    /**
-     * Store a newly created shipment
-     * 
-     * SECURITY FEATURES:
-     * - Comprehensive input validation
-     * - CSRF token verification
-     * - Ownership verification for addresses
-     * - Rate limiting (throttle:60,1)
-     * - Audit logging
-     */
     public function store(Request $request)
     {
-        // Validate all input thoroughly
         $validator = Validator::make($request->all(), [
             'service_id' => ['required', 'exists:services,id'],
             'sender_address_id' => [
@@ -195,7 +155,6 @@ class ShipmentController extends Controller
         $validated = $validator->validated();
 
         try {
-            // Create shipment with validated data
             $shipment = new Shipment();
             $shipment->user_id = Auth::id();
             $shipment->service_id = $validated['service_id'];
@@ -210,7 +169,7 @@ class ShipmentController extends Controller
             ]);
             $shipment->declared_value = $validated['declared_value'];
             $shipment->currency = $validated['currency'];
-            $shipment->content_description = strip_tags($validated['content_description']); // Sanitize
+            $shipment->content_description = strip_tags($validated['content_description']);
             $shipment->insurance_enabled = $validated['insurance_enabled'] ?? false;
             $shipment->insurance_amount = $validated['insurance_amount'] ?? 0;
             $shipment->requires_signature = $validated['requires_signature'] ?? false;
@@ -221,7 +180,6 @@ class ShipmentController extends Controller
             $shipment->pickup_date = $validated['pickup_date'] ?? null;
             $shipment->status = 'pending';
             
-            // Calculate estimated delivery based on service
             $service = Service::find($validated['service_id']);
             if ($service && $service->estimated_days) {
                 $shipment->estimated_delivery = now()->addDays($service->estimated_days);
@@ -237,7 +195,13 @@ class ShipmentController extends Controller
                 'scan_datetime' => now(),
             ]);
 
-            // Log successful creation
+            // 🔥 TRIGGER EVENTS FOR NOTIFICATIONS
+            // Trigger ShipmentCreated event
+            event(new ShipmentCreated($shipment));
+            
+            // Trigger ShipmentStatusUpdated event for initial status
+            event(new ShipmentStatusUpdated($shipment, '', 'pending'));
+
             Log::channel('security')->info('Shipment created successfully', [
                 'user_id' => Auth::id(),
                 'shipment_id' => $shipment->id,
@@ -250,7 +214,6 @@ class ShipmentController extends Controller
                 ->with('success', 'Shipment created successfully! Your tracking number is: ' . $shipment->tracking_number);
 
         } catch (\Exception $e) {
-            // Log error but don't expose details to user
             Log::error('Shipment creation failed', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
@@ -263,17 +226,8 @@ class ShipmentController extends Controller
         }
     }
 
-    /**
-     * Display the specified shipment
-     * 
-     * SECURITY FEATURES:
-     * - Authorization check (user can only view their own shipments)
-     * - Eager loading with specific columns
-     * - Audit logging
-     */
     public function show(Request $request, Shipment $shipment)
     {
-        // Authorization - user can only view their own shipments
         if ($shipment->user_id !== Auth::id()) {
             Log::warning('Unauthorized shipment access attempt', [
                 'user_id' => Auth::id(),
@@ -285,7 +239,6 @@ class ShipmentController extends Controller
             abort(403, 'Unauthorized access to shipment.');
         }
 
-        // Eager load with specific columns for security
         $shipment->load([
             'senderAddress:id,name,address_line1,address_line2,city,state,country,postal_code,phone',
             'recipientAddress:id,name,address_line1,address_line2,city,state,country,postal_code,phone',
@@ -296,7 +249,6 @@ class ShipmentController extends Controller
             }
         ]);
 
-        // Log the view
         Log::channel('security')->info('Shipment viewed', [
             'user_id' => Auth::id(),
             'shipment_id' => $shipment->id,
@@ -307,22 +259,12 @@ class ShipmentController extends Controller
         return view('shipments.show', compact('shipment'));
     }
 
-    /**
-     * Show the form for editing the specified shipment
-     * 
-     * SECURITY FEATURES:
-     * - Authorization check
-     * - Only allow editing for certain statuses
-     * - Validate user owns the addresses
-     */
     public function edit(Request $request, Shipment $shipment)
     {
-        // Authorization check
         if ($shipment->user_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
 
-        // Only allow editing for pending shipments
         if (!in_array($shipment->status, ['pending', 'confirmed'])) {
             return redirect()->route('shipments.show', $shipment)
                 ->with('error', 'Shipment cannot be edited after processing has started.');
@@ -337,18 +279,8 @@ class ShipmentController extends Controller
         return view('shipments.edit', compact('shipment', 'addresses', 'services'));
     }
 
-    /**
-     * Update the specified shipment
-     * 
-     * SECURITY FEATURES:
-     * - Authorization check
-     * - Comprehensive validation
-     * - Status-based update restrictions
-     * - Audit logging
-     */
     public function update(Request $request, Shipment $shipment)
     {
-        // Authorization check
         if ($shipment->user_id !== Auth::id()) {
             Log::warning('Unauthorized shipment update attempt', [
                 'user_id' => Auth::id(),
@@ -358,13 +290,11 @@ class ShipmentController extends Controller
             abort(403);
         }
 
-        // Only allow updating for pending shipments
         if (!in_array($shipment->status, ['pending', 'confirmed'])) {
             return redirect()->route('shipments.show', $shipment)
                 ->with('error', 'Shipment cannot be updated after processing has started.');
         }
 
-        // Similar validation as store method
         $validator = Validator::make($request->all(), [
             'service_id' => ['required', 'exists:services,id'],
             'sender_address_id' => [
@@ -381,7 +311,6 @@ class ShipmentController extends Controller
                 })
             ],
             'weight' => ['required', 'numeric', 'min:0.1', 'max:1000'],
-            // ... similar validation as store
         ]);
 
         if ($validator->fails()) {
@@ -393,16 +322,13 @@ class ShipmentController extends Controller
         $validated = $validator->validated();
 
         try {
-            // Update shipment
             $shipment->update([
                 'service_id' => $validated['service_id'],
                 'sender_address_id' => $validated['sender_address_id'],
                 'recipient_address_id' => $validated['recipient_address_id'],
                 'weight' => $validated['weight'],
-                // ... other fields
             ]);
 
-            // Add to status history
             $shipment->statusHistory()->create([
                 'status' => $shipment->status,
                 'location' => 'System',
@@ -432,22 +358,12 @@ class ShipmentController extends Controller
         }
     }
 
-    /**
-     * Cancel a shipment
-     * 
-     * SECURITY FEATURES:
-     * - Authorization check
-     * - Only allow cancellation for certain statuses
-     * - Reason required for audit trail
-     */
     public function cancel(Request $request, Shipment $shipment)
     {
-        // Authorization check
         if ($shipment->user_id !== Auth::id()) {
             abort(403);
         }
 
-        // Only allow cancellation for pending/confirmed shipments
         if (!in_array($shipment->status, ['pending', 'confirmed'])) {
             return redirect()->route('shipments.show', $shipment)
                 ->with('error', 'Shipment cannot be cancelled after processing has started.');
@@ -463,16 +379,21 @@ class ShipmentController extends Controller
         }
 
         try {
+            // Store old status before changing
+            $oldStatus = $shipment->status;
+            
             $shipment->status = 'cancelled';
             $shipment->save();
 
-            // Add to status history
             $shipment->statusHistory()->create([
                 'status' => 'cancelled',
                 'location' => 'System',
                 'description' => 'Shipment cancelled by user. Reason: ' . strip_tags($request->cancellation_reason),
                 'scan_datetime' => now(),
             ]);
+
+            // 🔥 TRIGGER EVENT FOR STATUS CHANGE NOTIFICATION
+            event(new ShipmentStatusUpdated($shipment, $oldStatus, 'cancelled'));
 
             Log::channel('security')->info('Shipment cancelled', [
                 'user_id' => Auth::id(),
@@ -496,17 +417,8 @@ class ShipmentController extends Controller
         }
     }
 
-    /**
-     * Remove the specified shipment (soft delete)
-     * 
-     * SECURITY FEATURES:
-     * - Authorization check
-     * - Only allow deletion for pending shipments
-     * - Soft delete for audit trail
-     */
     public function destroy(Request $request, Shipment $shipment)
     {
-        // Authorization check
         if ($shipment->user_id !== Auth::id()) {
             Log::warning('Unauthorized shipment deletion attempt', [
                 'user_id' => Auth::id(),
@@ -516,14 +428,12 @@ class ShipmentController extends Controller
             abort(403);
         }
 
-        // Only allow deletion for pending shipments
         if ($shipment->status !== 'pending') {
             return redirect()->route('shipments.show', $shipment)
                 ->with('error', 'Only pending shipments can be deleted.');
         }
 
         try {
-            // Log before deletion for audit trail
             Log::channel('security')->warning('Shipment deleted', [
                 'user_id' => Auth::id(),
                 'shipment_id' => $shipment->id,
@@ -549,18 +459,12 @@ class ShipmentController extends Controller
         }
     }
 
-    /**
-     * Public tracking (no authentication required)
-     * 
-     * SECURITY FEATURES:
-     * - Rate limiting
-     * - Input validation
-     * - Limited information exposure
-     * - Tracking attempt logging
-     */
     public function track(Request $request)
     {
-        // Validate tracking number format
+        if ($request->isMethod('get') && !$request->has('tracking_number')) {
+            return view('tracking.index');
+        }
+
         $validator = Validator::make($request->all(), [
             'tracking_number' => ['required', 'string', 'regex:/^GS[A-Z0-9]{8}$/']
         ]);
@@ -571,13 +475,12 @@ class ShipmentController extends Controller
                 'ip' => $request->ip()
             ]);
             
-            return redirect()->route('tracking')
+            return back()
                 ->with('error', 'Invalid tracking number format. Please use format: GS followed by 8 letters/numbers.');
         }
 
         $trackingNumber = strtoupper(trim($request->tracking_number));
         
-        // Find shipment
         $shipment = Shipment::where('tracking_number', $trackingNumber)->first();
 
         if (!$shipment) {
@@ -586,11 +489,10 @@ class ShipmentController extends Controller
                 'ip' => $request->ip()
             ]);
             
-            return redirect()->route('tracking')
+            return back()
                 ->with('error', 'Tracking number not found. Please check and try again.');
         }
 
-        // Prepare limited data for public view
         $trackingData = [
             'tracking_number' => $shipment->tracking_number,
             'status' => $shipment->status,
@@ -603,7 +505,6 @@ class ShipmentController extends Controller
                 ->get()
         ];
 
-        // Log successful tracking
         Log::channel('tracking')->info('Public tracking accessed', [
             'tracking_number' => $trackingNumber,
             'status' => $shipment->status,
@@ -614,18 +515,10 @@ class ShipmentController extends Controller
         return view('tracking.public', compact('trackingData'));
     }
 
-    /**
-     * Get shipment statistics for dashboard
-     * 
-     * SECURITY FEATURES:
-     * - Only user's data
-     * - Cached for performance
-     */
     public function getStats()
     {
         $userId = Auth::id();
         
-        // Cache for 5 minutes
         $stats = cache()->remember("user_{$userId}_shipment_stats", 300, function() use ($userId) {
             return [
                 'total' => Shipment::where('user_id', $userId)->count(),
@@ -645,5 +538,34 @@ class ShipmentController extends Controller
         });
 
         return $stats;
+    }
+
+    public function dashboardTracking(Request $request)
+    {
+        $shipment = null;
+        
+        if ($request->has('tracking_number')) {
+            $trackingNumber = strtoupper(trim($request->tracking_number));
+            
+            if (!preg_match('/^GS[A-Z0-9]{8}$/', $trackingNumber)) {
+                return redirect()->route('dashboard.tracking')
+                    ->with('error', 'Invalid tracking number format. Use format: GS followed by 8 letters/numbers.')
+                    ->withInput();
+            }
+            
+            $shipment = Auth::user()->shipments()
+                ->where('tracking_number', $trackingNumber)
+                ->first();
+            
+            if (!$shipment) {
+                Log::channel('security')->warning('User attempted to track non-owned shipment', [
+                    'user_id' => Auth::id(),
+                    'tracking_number' => $trackingNumber,
+                    'ip' => $request->ip()
+                ]);
+            }
+        }
+        
+        return view('tracking.index', compact('shipment'));
     }
 }

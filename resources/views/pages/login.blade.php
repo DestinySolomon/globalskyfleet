@@ -61,7 +61,7 @@
                             </div>
                         @endif
                         
-                        <form id="loginForm" method="POST" action="{{ route('login') }}">
+                        <form id="loginForm" method="POST" action="{{ route('login') }}{{ request('redirect') ? '?redirect=' . urlencode(request('redirect')) : '' }}">
                             @csrf
                             <div class="mb-4">
                                 <label for="email" class="form-label fw-semibold text-navy mb-2">Email Address</label>

@@ -143,6 +143,8 @@
             flex: 1;
             margin-left: var(--sidebar-width);
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         
         .main-content.expanded {
@@ -253,7 +255,7 @@
         /* Content Area */
         .content-area {
             padding: 1.5rem;
-            min-height: calc(100vh - var(--topbar-height));
+            flex: 1;
         }
         
         /* Dropdowns */
@@ -344,6 +346,15 @@
     justify-content: center;
     font-weight: 600;
 }
+
+        /* Avatar image styles */
+        .user-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
         
         .table-header {
             padding: 1.5rem;
@@ -603,88 +614,421 @@
             align-items: center;
             gap: 0.75rem;
         }
+
+
+        /* Enhanced Active State */
+.menu-item.active {
+    background-color: var(--navy-light);
+    color: white;
+    font-weight: 500;
+    position: relative;
+}
+
+.menu-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: white;
+    border-radius: 0 2px 2px 0;
+}
+
+.menu-item.active i {
+    color: white;
+}
         
         /* Ensure proper spacing for the entire app */
         .container-fluid {
             padding-left: 0;
             padding-right: 0;
         }
+
+
+
+        /* ==================== FLOATING HOME BUTTON ==================== */
+.floating-home-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1050;
+    animation: floatAnimation 3s ease-in-out infinite;
+}
+
+.floating-home-btn:hover {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(30, 64, 175, 0.4);
+    animation-play-state: paused;
+}
+
+.floating-home-tooltip {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 12px);
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.floating-home-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent transparent rgba(0, 0, 0, 0.85);
+}
+
+.floating-home-btn:hover .floating-home-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* Floating animation */
+@keyframes floatAnimation {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .floating-home-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .floating-home-tooltip {
+        display: none;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 576px) {
+    .floating-home-btn {
+        bottom: 70px; /* Move up to avoid mobile browser UI */
+        right: 15px;
+    }
+}
+
+
+/* ==================== LOADING OVERLAY ==================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a2463 0%, #1a3375 100%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-container {
+    text-align: center;
+    max-width: 400px;
+    padding: 2rem;
+    position: relative;
+}
+
+/* Plane Animation */
+.plane-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 2rem;
+    perspective: 1000px;
+}
+
+.plane-icon {
+    font-size: 4rem;
+    color: #ffffff;
+    position: absolute;
+    top: 50%;
+    left: -50px;
+    transform: translateY(-50%) rotate(45deg);
+    animation: planeTakeoff 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+    z-index: 2;
+}
+
+.plane-trail {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.8) 30%,
+        rgba(255, 255, 255, 0.4) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateY(-50%);
+    animation: trailFade 2s ease-in-out infinite;
+}
+
+.plane-clouds {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: cloudFloat 3s ease-in-out infinite;
+}
+
+.cloud-1 {
+    width: 40px;
+    height: 20px;
+    top: 30%;
+    left: 20%;
+    animation-delay: 0s;
+}
+
+.cloud-2 {
+    width: 60px;
+    height: 30px;
+    top: 50%;
+    left: 60%;
+    animation-delay: 0.5s;
+}
+
+.cloud-3 {
+    width: 30px;
+    height: 15px;
+    top: 70%;
+    left: 40%;
+    animation-delay: 1s;
+}
+
+/* Loading Text */
+.loading-text {
+    color: white;
+    margin-bottom: 2rem;
+}
+
+.loading-dots {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.loading-dots .dot {
+    animation: dotPulse 1.5s infinite;
+}
+
+.loading-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+.loading-dots .dot:nth-child(4) { animation-delay: 0.6s; }
+
+.loading-subtext {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Progress Bar */
+.loading-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+    animation: progressLoad 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes planeTakeoff {
+    0% {
+        left: -50px;
+        transform: translateY(-50%) rotate(45deg) scale(0.8);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-50%) rotate(45deg) scale(1);
+    }
+    80% {
+        left: 250px;
+        transform: translateY(-50%) rotate(45deg) scale(1);
+        opacity: 1;
+    }
+    100% {
+        left: 250px;
+        transform: translateY(-50%) rotate(45deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+@keyframes trailFade {
+    0%, 100% {
+        opacity: 0;
+        transform: translateY(-50%) scaleX(0.5);
+    }
+    20%, 80% {
+        opacity: 0.5;
+        transform: translateY(-50%) scaleX(1);
+    }
+}
+
+@keyframes cloudFloat {
+    0%, 100% {
+        transform: translateY(0) translateX(0);
+        opacity: 0.3;
+    }
+    50% {
+        transform: translateY(-10px) translateX(10px);
+        opacity: 0.6;
+    }
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes progressLoad {
+    0% {
+        width: 0%;
+        left: 0;
+    }
+    50% {
+        width: 100%;
+        left: 0;
+    }
+    100% {
+        width: 0%;
+        left: 100%;
+    }
+}
+
+/* For faster animations on form submissions */
+.loading-overlay.fast .plane-icon {
+    animation-duration: 1s;
+}
+
+.loading-overlay.fast .progress-bar {
+    animation-duration: 1s;
+}
     </style>
 </head>
 <body>
+      @include('partials.loading-overlay')
+
     <div class="dashboard-wrapper">
         <!-- Sidebar Overlay for Mobile -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">GSF</div>
-                <div class="sidebar-brand">GlobalSkyFleet</div>
-            </div>
-            
             <div class="sidebar-menu">
-                <div class="menu-label">Main</div>
-                <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="ri-dashboard-line"></i>
-                    <span class="menu-text">Dashboard</span>
-                </a>
-                
-                <a href="{{ route('shipments.index') }}" class="menu-item">
-                    <i class="ri-ship-line"></i>
-                    <span class="menu-text">My Shipments</span>
-                </a>
-                
-                <a href="{{ route('addresses.index') }}" class="menu-item">
-                    <i class="ri-map-pin-line"></i>
-                    <span class="menu-text">Address Book</span>
-                </a>
-                
-                <a href="{{ route('quote') }}" class="menu-item">
-                    <i class="ri-add-circle-line"></i>
-                    <span class="menu-text">Create Shipment</span>
-                </a>
-                
-                <div class="menu-label">Tools</div>
-                <a href="{{ route('tracking') }}" class="menu-item">
-                    <i class="ri-search-line"></i>
-                    <span class="menu-text">Track Shipment</span>
-                </a>
-                
-                <a href="{{ route('quote') }}" class="menu-item">
-                    <i class="ri-calculator-line"></i>
-                    <span class="menu-text">Get Quote</span>
-                </a>
-                
-                <a href="#" class="menu-item">
-                    <i class="ri-file-text-line"></i>
-                    <span class="menu-text">Documents</span>
-                </a>
-                
-                <div class="menu-label">Account</div>
-                <a href="#" class="menu-item">
-                    <i class="ri-user-line"></i>
-                    <span class="menu-text">My Profile</span>
-                </a>
-                
-                <a href="#" class="menu-item">
-                    <i class="ri-bill-line"></i>
-                    <span class="menu-text">Billing</span>
-                </a>
-                
-                <a href="#" class="menu-item">
-                    <i class="ri-settings-3-line"></i>
-                    <span class="menu-text">Settings</span>
-                </a>
-                
-                <form action="{{ route('logout') }}" method="POST" class="menu-item">
-                    @csrf
-                    <button type="submit">
-                        <i class="ri-logout-box-line"></i>
-                        <span class="menu-text">Logout</span>
-                    </button>
-                </form>
-            </div>
+    <div class="menu-label">Main</div>
+    <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+        <i class="ri-dashboard-line"></i>
+        <span class="menu-text">Dashboard</span>
+    </a>
+    
+    <a href="{{ route('shipments.index') }}" class="menu-item {{ request()->routeIs('shipments.*') ? 'active' : '' }}">
+        <i class="ri-ship-line"></i>
+        <span class="menu-text">My Shipments</span>
+    </a>
+    
+    <a href="{{ route('addresses.index') }}" class="menu-item {{ request()->routeIs('addresses.*') ? 'active' : '' }}">
+        <i class="ri-map-pin-line"></i>
+        <span class="menu-text">Address Book</span>
+    </a>
+    
+   
+    
+    <div class="menu-label">Tools</div>
+   <a href="{{ route('dashboard.tracking') }}" class="menu-item {{ request()->routeIs('dashboard.tracking') ? 'active' : '' }}">
+    <i class="ri-search-line"></i>
+    <span class="menu-text">Track Shipment</span>
+</a>
+    
+    <a href="{{ route('quote') }}" class="menu-item {{ request()->routeIs('quote*') ? 'active' : '' }}">
+        <i class="ri-calculator-line"></i>
+        <span class="menu-text">Get Quote</span>
+    </a>
+    
+    <a href="{{ route('documents.index') }}" class="menu-item {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+    <i class="ri-file-text-line"></i>
+    <span class="menu-text">Documents</span>
+</a>
+    
+   <a href="{{ route('billing.index') }}" class="menu-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">
+    <i class="ri-bill-line"></i>
+    <span class="menu-text">Billing</span>
+</a>
+    
+    <form action="{{ route('logout') }}" method="POST" class="menu-item">
+        @csrf
+        <button type="submit">
+            <i class="ri-logout-box-line"></i>
+            <span class="menu-text">Logout</span>
+        </button>
+    </form>
+</div>
         </aside>
 
         <!-- Main Content -->
@@ -699,30 +1043,35 @@
                 </div>
                 
                 <div class="topbar-right">
-                    <div class="notification-btn position-relative">
-                        <i class="ri-notification-3-line"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
+                   <div class="notification-btn position-relative" id="notificationBell">
+                       <i class="ri-notification-3-line"></i>
+                        <span class="notification-badge" style="display: none;">0</span>
+                </div>
                     
+                    {{-- user Icon --}}
                     <div class="dropdown">
                         <button class="user-avatar dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ Auth::user()->initials ?? substr(Auth::user()->name, 0, 2) }}
+                            @if(Auth::user()->profile_picture)
+                                <img src="{{ Auth::user()->profile_picture_url }}" alt="{{ Auth::user()->name }}'s avatar" class="user-avatar-img">
+                            @else
+                                {{ Auth::user()->initials ?? substr(Auth::user()->name, 0, 2) }}
+                            @endif
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="{{ route('user.profile') }}">
                                     <i class="ri-user-line"></i>
                                     My Profile
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="{{ route('user.account') }}">
                                     <i class="ri-settings-3-line"></i>
                                     Account Settings
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item" href="{{ route('user.security') }}">
                                     <i class="ri-shield-keyhole-line"></i>
                                     Privacy & Security
                                 </a>
@@ -807,8 +1156,50 @@
                 }
             });
         });
+
+
+
+            // Floating Home Button Effects
+    document.addEventListener('DOMContentLoaded', function() {
+        const floatingBtn = document.getElementById('floatingHomeBtn');
+        
+        if (floatingBtn) {
+            // Hide/show on scroll
+            let lastScrollTop = 0;
+            const scrollThreshold = 100; // Show after scrolling 100px
+            
+            window.addEventListener('scroll', function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > scrollThreshold) {
+                    // User has scrolled down - make button more visible
+                    floatingBtn.style.opacity = '1';
+                } else {
+                    // At top of page - slightly transparent
+                    floatingBtn.style.opacity = '0.8';
+                }
+                
+                lastScrollTop = scrollTop;
+            });
+            
+            // Click animation
+            floatingBtn.addEventListener('click', function(e) {
+                // Add a click effect
+                this.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 200);
+            });
+        }
+    });
     </script>
     
     @stack('scripts')
+    
+    <!-- Add the notification script -->
+<script src="{{ asset('js/notifications.js') }}"></script>
+<!-- Page Loader Script -->
+<script src="{{ asset('js/page-loader.js') }}"></script>
+  @include('partials.floating-home')
 </body>
 </html>

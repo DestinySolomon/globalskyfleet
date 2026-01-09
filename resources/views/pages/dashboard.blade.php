@@ -14,9 +14,9 @@
                 <h5 class="mb-1">Welcome back, {{ Auth::user()->name }}! 👋</h5>
                 <p class="mb-0 opacity-90">Here's what's happening with your shipments today. You have <strong>{{ $stats['in_transit'] ?? 0 }}</strong> active shipments in transit.</p>
             </div>
-            <a href="{{ route('quote') }}" class="btn btn-light" style="color: #1e40af; white-space: nowrap;">
-                <i class="ri-add-line me-2"></i>Create Shipment
-            </a>
+                          <a href="{{ route('shipments.create') }}" class="btn btn-primary">
+    <i class="ri-add-line me-2"></i>Create Shipment
+</a>
         </div>
     </div>
 
@@ -194,9 +194,9 @@
                             </div>
                             <h5 class="text-muted mb-3">No shipments yet</h5>
                             <p class="text-muted mb-4">Create your first shipment to get started</p>
-                            <a href="{{ route('quote') }}" class="btn btn-primary">
-                                <i class="ri-add-line me-2"></i>Create Shipment
-                            </a>
+                                          <a href="{{ route('shipments.create') }}" class="btn btn-primary">
+    <i class="ri-add-line me-2"></i>Create Shipment
+</a>
                         </td>
                     </tr>
                     @endforelse
@@ -218,7 +218,7 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <a href="{{ route('quote') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                            <a href="{{ route('shipments.create') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                 <div class="card-body text-center py-4">
                                     <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
                                         <i class="ri-add-line text-primary" style="font-size: 1.5rem;"></i>

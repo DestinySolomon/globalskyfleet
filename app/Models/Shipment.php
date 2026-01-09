@@ -67,18 +67,23 @@ class Shipment extends Model
         });
     }
 
-    public static function generateTrackingNumber()
-    {
-        // Format: GS + 8 random alphanumeric characters
+   public static function generateTrackingNumber()
+{
+    do {
+        // Format: GS + 8 random ALPHANUMERIC (only uppercase letters and numbers)
         $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $random = '';
+        $trackingNumber = 'GS';
         
+        // Generate 8 random characters
         for ($i = 0; $i < 8; $i++) {
-            $random .= $characters[rand(0, strlen($characters) - 1)];
+            $trackingNumber .= $characters[rand(0, strlen($characters) - 1)];
         }
         
-        return 'GS' . $random;
-    }
+        // Check if it already exists
+    } while (self::where('tracking_number', $trackingNumber)->exists());
+    
+    return $trackingNumber;
+}
 
     // Relationship: Shipment belongs to a User
     public function user()
@@ -141,4 +146,11 @@ class Shipment extends Model
     {
         return in_array($this->status, ['in_transit', 'out_for_delivery', 'customs_hold']);
     }
+
+
+    // Relationship: Shipment has documents
+public function documents()
+{
+    return $this->hasMany(Document::class);
+}
 }

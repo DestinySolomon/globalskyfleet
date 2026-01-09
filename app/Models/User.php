@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -20,6 +22,16 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
+        'profile_picture',
+        'company',
+        'bio',
+        'settings',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'password_changed_at',
+        'last_login_at',
+        'last_login_ip',
     ];
 
     /**
@@ -30,6 +42,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -42,6 +56,11 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'settings' => 'array',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_recovery_codes' => 'array',
+            'password_changed_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -62,6 +81,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Shipment::class);
     }
+     
+    /**
+     * Get all documents uploaded by the user.
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
 
     /**
      * Get all payments made by the user.
@@ -70,6 +97,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(Payment::class);
     }
+
+    // ==================== ADMIN METHODS ====================
+
+   public function isAdmin()
+   {
+    return $this->role === 'admin';
+   }
+
+// Super Admin Check
+public function isSuperAdmin()
+{
+    return $this->email === 'superadmin@globalskyfleet.com' || $this->role === 'super_admin';
+}
+
+public function isAdminOrSuperAdmin()
+{
+    return $this->isAdmin() || $this->isSuperAdmin();
+}
 
     // ==================== HELPER METHODS ====================
 
@@ -210,4 +255,177 @@ class User extends Authenticatable
         
         return substr($initials, 0, 2);
     }
+
+    /**
+     * Get all invoices for the user.
+     */
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Get all crypto payments made by the user.
+     */
+    public function cryptoPayments()
+    {
+        return $this->hasMany(CryptoPayment::class);
+    }
+
+    /**
+     * Get pending invoices.
+     */
+    public function pendingInvoices()
+    {
+        return $this->invoices()->where('status', 'pending');
+    }
+
+    /**
+     * Get overdue invoices.
+     */
+    public function overdueInvoices()
+    {
+        return $this->invoices()->where('status', 'pending')
+                           ->where('due_date', '<', now());
+    }
+
+    /**
+     * Get total balance due.
+     */
+    public function getBalanceDueAttribute()
+    {
+        return $this->invoices()->where('status', 'pending')->sum('amount');
+    }
+
+    /**
+     * Get user's profile picture URL.
+     */
+    public function getProfilePictureUrlAttribute()
+    {
+        if ($this->profile_picture && Storage::disk('public')->exists('profile-pictures/' . $this->profile_picture)) {
+            return Storage::disk('public')->url('profile-pictures/' . $this->profile_picture);
+        }
+        
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=0a2463';
+    }
+
+    /**
+     * Get user's notification settings.
+     */
+    public function getNotificationSettingsAttribute()
+    {
+        $defaults = [
+            'email_notifications' => true,
+            'sms_notifications' => false,
+            'shipment_updates' => true,
+            'promotional_emails' => false,
+            'billing_notifications' => true,
+        ];
+        
+        return array_merge($defaults, data_get($this->settings, 'notifications', []));
+    }
+
+    /**
+     * Get user's display preferences.
+     */
+    public function getDisplayPreferencesAttribute()
+    {
+        $defaults = [
+            'language' => 'en',
+            'timezone' => 'UTC',
+            'currency' => 'USD',
+            'date_format' => 'm/d/Y',
+            'time_format' => '12h',
+            'theme' => 'light',
+        ];
+        
+        return array_merge($defaults, data_get($this->settings, 'display', []));
+    }
+
+    /**
+     * Get active sessions.
+     */
+    public function activeSessions()
+    {
+        return DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->where('last_activity', '>=', now()->subMinutes(config('auth.guards.web.expire', 120)))
+            ->orderBy('last_activity', 'desc')
+            ->get();
+    }
+
+    /**
+     * Check if user has recently changed password.
+     */
+    public function passwordRecentlyChanged($days = 90)
+    {
+        if (!$this->password_changed_at) {
+            return false;
+        }
+        
+        return $this->password_changed_at->addDays($days)->isFuture();
+    }
+
+    /**
+     * Record password change.
+     */
+    public function recordPasswordChange()
+    {
+        $this->update(['password_changed_at' => now()]);
+    }
+
+    /**
+     * Record login activity.
+     */
+    public function recordLogin($ipAddress)
+    {
+        $this->update([
+            'last_login_at' => now(),
+            'last_login_ip' => $ipAddress,
+        ]);
+    }
+
+
+    // Add to your User model methods:
+
+/**
+ * Get user's notification preferences with defaults
+ */
+public function getNotificationPreferencesAttribute()
+{
+    $defaults = [
+        'shipment_created' => true,
+        'shipment_status_updated' => true,
+        'shipment_out_for_delivery' => true,
+        'shipment_delivered' => true,
+        'shipment_customs_hold' => true,
+        'shipment_cancelled' => true,
+        'invoice_created' => true,
+        'invoice_paid' => true,
+        'invoice_overdue' => true,
+        'email_notifications' => true,
+        'push_notifications' => true,
+    ];
+    
+    $preferences = $this->attributes['notification_preferences'] ?? [];
+    
+    if (is_string($preferences)) {
+        $preferences = json_decode($preferences, true) ?? [];
+    }
+    
+    return array_merge($defaults, $preferences);
+}
+
+/**
+ * Update notification preferences
+ */
+public function updateNotificationPreferences(array $preferences)
+{
+    $current = $this->notification_preferences;
+    $updated = array_merge($current, $preferences);
+    
+    $this->notification_preferences = $updated;
+    $this->save();
+}
+
 }
