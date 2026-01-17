@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
-            <a href="{{ route('admin.settings') }}" class="btn btn-outline-secondary">
+            <a href="{{ route('admin.settings.index') }}" class="btn btn-outline-secondary">
                 <i class="ri-arrow-left-line me-2"></i>Back to Settings
             </a>
         </div>
@@ -60,13 +60,13 @@
                                 <div class="mb-3">
                                     <label class="form-label">Subject</label>
                                     <input type="text" name="subject" class="form-control" 
-                                           value="{{ Setting::get('email_template_' . $key . '_subject', $template['subject']) }}" 
+                                           value="{{ setting('email_template_' . $key . '_subject', $template['subject']) }}" 
                                            required>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Email Content</label>
-                                    <textarea name="content" class="form-control" rows="10" required>{{ Setting::get('email_template_' . $key . '_content', $this->getDefaultTemplate($key)) }}</textarea>
+                                    <textarea name="content" class="form-control" rows="10" required>{{ setting('email_template_' . $key . '_content', '') }}</textarea>
                                 </div>
                                 
                                 <div class="mb-3">

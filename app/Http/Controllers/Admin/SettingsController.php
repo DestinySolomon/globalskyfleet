@@ -31,7 +31,7 @@ class SettingsController extends Controller
             if ($request->hasFile($key)) {
                 $file = $request->file($key);
                 $path = $file->store('settings', 'public');
-                Setting::set($key, $path);
+                Setting::set($key, $path, 'string');
                 continue;
             }
             
@@ -66,12 +66,14 @@ class SettingsController extends Controller
             Setting::set($key, $value);
         }
         
-        // Clear settings cache if you're using caching
+        // Clear all caches
         if (function_exists('cache')) {
             cache()->forget('settings');
+            cache()->forget('settings_cache');
+            cache()->forget('settings_grouped');
         }
         
-        return redirect()->route('admin.settings')
+        return redirect()->route('admin.settings.index')
             ->with('success', 'Settings updated successfully!');
     }
     
@@ -156,7 +158,7 @@ class SettingsController extends Controller
         \Artisan::call('config:clear');
         \Artisan::call('view:clear');
         
-        return redirect()->route('admin.settings')
+        return redirect()->route('admin.settings.index')
             ->with('success', 'Cache cleared successfully!');
     }
     
@@ -167,7 +169,7 @@ class SettingsController extends Controller
     {
         \Artisan::call('backup:run', ['--only-db' => true]);
         
-        return redirect()->route('admin.settings')
+        return redirect()->route('admin.settings.index')
             ->with('success', 'Database backup created successfully!');
     }
 }

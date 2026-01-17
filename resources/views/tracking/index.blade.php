@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+@extends('layouts.app')
 
 @section('title', 'Track Shipment | GlobalSkyFleet')
 @section('page-title', 'Track Shipment')
@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <!-- Header -->
-        <div class="text-center mb-5">
+        <div class="text-center mb-5 mt-5 pt-4">
             <div class="mb-3">
                 <i class="ri-search-line text-primary" style="font-size: 3rem;"></i>
             </div>

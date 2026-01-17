@@ -14,7 +14,7 @@
                 <!-- Left Content (Hidden on Mobile) -->
                 <div class="col-lg-6 d-none d-lg-block">
                     <div class="mb-5">
-                        <img src="{{ asset('images/logo.png') }}" alt="GlobalSkyFleet Logo" height="64" class="mb-4" onerror="this.onerror=null; this.src='https://public.readdy.ai/ai/img_res/bff3fd19-13f1-4916-8547-1d7e14a0267e.png'">
+                        <img src="{{ setting('site_logo') ? Storage::url(setting('site_logo')) : asset('images/logo.png') }}" alt="{{ setting('site_name', 'GlobalSkyFleet') }} Logo" height="64" class="mb-4" onerror="this.onerror=null; this.src='https://public.readdy.ai/ai/img_res/bff3fd19-13f1-4916-8547-1d7e14a0267e.png'">
                         <h2 class="display-5 fw-bold text-navy mb-4">Welcome to GlobalSkyFleet</h2>
                         <p class="text-muted fs-5 lh-lg mb-5">
                             Access your dashboard to manage shipments, track deliveries, and view your complete shipping history.

@@ -7,6 +7,13 @@
 
     <title>@yield('title', config('app.name', 'GlobalSkyFleet'))</title>
 
+    <!-- Favicon -->
+    @if(setting('site_favicon'))
+        <link rel="icon" type="image/x-icon" href="{{ Storage::url(setting('site_favicon')) }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @endif
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -743,8 +750,6 @@
         right: 15px;
     }
 }
-
-
 /* ==================== LOADING OVERLAY ==================== */
 .loading-overlay {
     position: fixed;
@@ -752,117 +757,135 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #0a2463 0%, #1a3375 100%);
+    background: linear-gradient(135deg, #0a2463 0%, #1e40af 100%);
     z-index: 9999;
-    display: flex;
+    display: none; /* Changed from flex */
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 .loading-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    display: flex;
+}
+
+.loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .loading-container {
     text-align: center;
-    max-width: 400px;
-    padding: 2rem;
+    color: white;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
     position: relative;
 }
 
-/* Plane Animation */
+/* Flying Plane Animation - Updated to match admin dashboard */
 .plane-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 2rem;
-    perspective: 1000px;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 100px;
+    pointer-events: none;
 }
 
 .plane-icon {
-    font-size: 4rem;
-    color: #ffffff;
+    font-size: 60px;
+    color: white;
     position: absolute;
-    top: 50%;
-    left: -50px;
-    transform: translateY(-50%) rotate(45deg);
-    animation: planeTakeoff 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
-    z-index: 2;
+    left: -100px; /* Start off-screen left */
+    transform: translateY(-50%) rotate(90deg); /* Rotate 90deg to face right */
+    animation: flyAcross 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
 }
 
 .plane-trail {
     position: absolute;
+    left: -100px; /* Start with the plane */
     top: 50%;
-    left: 0;
-    width: 200px;
-    height: 2px;
-    background: linear-gradient(90deg, 
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.8) 30%,
-        rgba(255, 255, 255, 0.4) 70%,
-        rgba(255, 255, 255, 0) 100%
-    );
     transform: translateY(-50%);
-    animation: trailFade 2s ease-in-out infinite;
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(255, 255, 255, 0.8) 10%,
+        rgba(255, 255, 255, 0.4) 40%,
+        rgba(255, 255, 255, 0.1) 70%,
+        transparent 100%);
+    border-radius: 50%;
+    animation: trailAcross 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0.8;
 }
 
 .plane-clouds {
     position: absolute;
     width: 100%;
     height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
 }
 
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 50%;
-    animation: cloudFloat 3s ease-in-out infinite;
+    opacity: 0;
+    animation: cloudFade 3s ease-out forwards;
 }
 
 .cloud-1 {
-    width: 40px;
-    height: 20px;
+    width: 80px;
+    height: 40px;
     top: 30%;
-    left: 20%;
-    animation-delay: 0s;
-}
-
-.cloud-2 {
-    width: 60px;
-    height: 30px;
-    top: 50%;
-    left: 60%;
+    left: 30%;
     animation-delay: 0.5s;
 }
 
-.cloud-3 {
-    width: 30px;
-    height: 15px;
-    top: 70%;
-    left: 40%;
+.cloud-2 {
+    width: 120px;
+    height: 60px;
+    bottom: 40%;
+    left: 50%;
     animation-delay: 1s;
 }
 
-/* Loading Text */
+.cloud-3 {
+    width: 60px;
+    height: 30px;
+    top: 60%;
+    left: 70%;
+    animation-delay: 1.5s;
+}
+
+/* Loading Text - Appears after plane flies */
 .loading-text {
-    color: white;
-    margin-bottom: 2rem;
+    position: absolute;
+    bottom: 30%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+    animation: fadeInText 0.5s ease-out 3s forwards;
 }
 
 .loading-dots {
-    font-size: 1.5rem;
-    font-weight: 600;
     display: block;
+    font-size: 28px;
+    font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .loading-dots .dot {
-    animation: dotPulse 1.5s infinite;
+    opacity: 0;
+    animation: dotPulse 1.4s infinite;
 }
 
 .loading-dots .dot:nth-child(2) { animation-delay: 0.2s; }
@@ -871,76 +894,118 @@
 
 .loading-subtext {
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    margin: 0;
+    font-size: 16px;
+    margin-top: 0.5rem;
 }
 
 /* Progress Bar */
 .loading-progress {
-    width: 100%;
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
     height: 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
     overflow: hidden;
-    margin-top: 1rem;
+    opacity: 0;
+    animation: fadeInProgress 0.5s ease-out 3.2s forwards;
 }
 
 .progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+    animation: progressLoad 2s ease-in-out 3.2s infinite;
     border-radius: 2px;
-    animation: progressLoad 2s ease-in-out infinite;
 }
 
-/* Animations */
-@keyframes planeTakeoff {
+/* Animations - Updated to match admin dashboard */
+@keyframes flyAcross {
     0% {
-        left: -50px;
-        transform: translateY(-50%) rotate(45deg) scale(0.8);
-        opacity: 0;
-    }
-    20% {
+        left: -100px;
+        transform: translateY(-50%) rotate(90deg);
         opacity: 1;
-        transform: translateY(-50%) rotate(45deg) scale(1);
     }
     80% {
-        left: 250px;
-        transform: translateY(-50%) rotate(45deg) scale(1);
+        left: calc(100% - 50px);
         opacity: 1;
+        transform: translateY(-50%) rotate(90deg);
     }
     100% {
-        left: 250px;
-        transform: translateY(-50%) rotate(45deg) scale(0.8);
+        left: calc(100% + 100px);
         opacity: 0;
+        transform: translateY(-50%) rotate(90deg);
     }
 }
 
-@keyframes trailFade {
-    0%, 100% {
+@keyframes trailAcross {
+    0% {
+        left: -150px;
         opacity: 0;
-        transform: translateY(-50%) scaleX(0.5);
+        width: 0;
     }
-    20%, 80% {
-        opacity: 0.5;
-        transform: translateY(-50%) scaleX(1);
+    20% {
+        opacity: 0.8;
+        width: 100px;
+    }
+    80% {
+        left: calc(100% - 50px);
+        opacity: 0.8;
+        width: 100px;
+    }
+    100% {
+        left: calc(100% + 50px);
+        opacity: 0;
+        width: 0;
     }
 }
 
-@keyframes cloudFloat {
-    0%, 100% {
-        transform: translateY(0) translateX(0);
-        opacity: 0.3;
+@keyframes cloudFade {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
     }
-    50% {
-        transform: translateY(-10px) translateX(10px);
-        opacity: 0.6;
+    20% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    80% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes fadeInText {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInProgress {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
     }
 }
 
 @keyframes dotPulse {
     0%, 100% {
-        opacity: 0.3;
+        opacity: 0;
     }
     50% {
         opacity: 1;
@@ -950,21 +1015,33 @@
 @keyframes progressLoad {
     0% {
         width: 0%;
-        left: 0;
+        transform: translateX(-100%);
     }
     50% {
         width: 100%;
-        left: 0;
+        transform: translateX(0%);
     }
     100% {
         width: 0%;
-        left: 100%;
+        transform: translateX(100%);
     }
 }
 
 /* For faster animations on form submissions */
 .loading-overlay.fast .plane-icon {
-    animation-duration: 1s;
+    animation-duration: 1.5s;
+}
+
+.loading-overlay.fast .plane-trail {
+    animation-duration: 1.5s;
+}
+
+.loading-overlay.fast .loading-text {
+    animation: fadeInText 0.5s ease-out 1.5s forwards;
+}
+
+.loading-overlay.fast .loading-progress {
+    animation: fadeInProgress 0.5s ease-out 1.7s forwards;
 }
 
 .loading-overlay.fast .progress-bar {
@@ -973,7 +1050,7 @@
     </style>
 </head>
 <body>
-      @include('partials.loading-overlay')
+      {{-- @include('partials.loading-overlay') --}}
 
     <div class="dashboard-wrapper">
         <!-- Sidebar Overlay for Mobile -->
@@ -981,6 +1058,18 @@
         
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
+            <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.75rem;">
+                @if(setting('site_logo'))
+                    <img src="{{ Storage::url(setting('site_logo')) }}" alt="{{ setting('site_name', 'GlobalSkyFleet') }}" style="height: 40px; width: auto; object-fit: contain;">
+                @else
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1e40af, #3b82f6); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem; flex-shrink: 0;">
+                        GSF
+                    </div>
+                @endif
+                <div>
+                    <h6 style="margin: 0; font-weight: 700; color: var(--navy); font-size: 0.95rem;">{{ setting('site_name', 'GlobalSkyFleet') }}</h6>
+                </div>
+            </div>
             <div class="sidebar-menu">
     <div class="menu-label">Main</div>
     <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">

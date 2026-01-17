@@ -80,8 +80,9 @@ class Setting extends Model
         
         $setting->save();
         
-        // Clear cache after saving
+        // Clear all caches after saving
         Cache::forget('settings_cache');
+        Cache::forget('settings_grouped');
         
         return $setting;
     }

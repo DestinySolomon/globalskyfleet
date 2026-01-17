@@ -7,6 +7,13 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Favicon -->
+        @if(setting('site_favicon'))
+            <link rel="icon" type="image/x-icon" href="{{ Storage::url(setting('site_favicon')) }}">
+        @else
+            <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+        @endif
+
         <!-- Your CSS -->
         <link rel="stylesheet" href="{{ asset('css/app.css') }}">
         

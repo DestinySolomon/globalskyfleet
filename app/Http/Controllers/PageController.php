@@ -156,29 +156,210 @@ class PageController extends Controller
 
     public function contactSubmit(Request $request)
     {
-        // Validate the form
+        // Enhanced validation rules
         $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:100',
-            'phone' => 'required|string|max:20',
-            'subject' => 'required|string|in:general,quote,tracking,partnership,complaint,other',
-            'message' => 'required|string|max:2000'
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[\p{L}\p{M}\s\'\-.]+$/u', // Allows letters, spaces, apostrophes, hyphens, dots
+                function ($attribute, $value, $fail) {
+                    // Block common SQL injection patterns
+                    $dangerousPatterns = [
+                        '/\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|CREATE|ALTER|EXEC|DECLARE)\b/i',
+                        '/--/',
+                        '/;/',
+                        '/\/\*/',
+                        '/\*\//',
+                        '/<script/i',
+                        '/<\/script>/i',
+                        '/javascript:/i',
+                        '/onclick|onload|onerror/i',
+                    ];
+                    
+                    foreach ($dangerousPatterns as $pattern) {
+                        if (preg_match($pattern, $value)) {
+                            $fail('The ' . $attribute . ' contains invalid characters.');
+                        }
+                    }
+                }
+            ],
+            'email' => [
+                'required',
+                'email:rfc,dns', // Strict email validation
+                'max:100',
+                function ($attribute, $value, $fail) {
+                    // Additional email validation
+                    if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $fail('The email address is not valid.');
+                    }
+                    
+                    // Check for suspicious patterns
+                    if (preg_match('/[\<\>\"\'\(\)\&\;]/', $value)) {
+                        $fail('The email address contains invalid characters.');
+                    }
+                }
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^[\+\d\s\-\(\)\.]+$/', // Only allows +, digits, spaces, -, (, ), .
+            ],
+            'subject' => [
+                'required',
+                'string',
+                'in:general,quote,tracking,partnership,complaint,other'
+            ],
+            'message' => [
+                'required',
+                'string',
+                'min:10',
+                'max:2000',
+                function ($attribute, $value, $fail) {
+                    // Basic XSS prevention
+                    $dangerousTags = ['<script', '</script>', '<iframe', '</iframe>', '<object', '</object>'];
+                    foreach ($dangerousTags as $tag) {
+                        if (stripos($value, $tag) !== false) {
+                            $fail('The message contains invalid content.');
+                        }
+                    }
+                    
+                    // Check for SQL injection patterns
+                    $sqlPatterns = ['SELECT ', 'INSERT ', 'UPDATE ', 'DELETE ', 'DROP ', 'UNION ', '--', ';'];
+                    foreach ($sqlPatterns as $pattern) {
+                        if (stripos($value, $pattern) !== false) {
+                            $fail('The message contains invalid content.');
+                        }
+                    }
+                }
+            ]
         ]);
         
-        // In a real application, you would:
-        // 1. Save the contact form submission to the database
-        // 2. Send email notifications to the support team
-        // 3. Send a confirmation email to the user
-        // 4. Maybe create a ticket in your support system
+        // Additional sanitization
+        $sanitizedData = [
+            'name' => $this->sanitizeInput($validated['name']),
+            'email' => filter_var($validated['email'], FILTER_SANITIZE_EMAIL),
+            'phone' => $this->sanitizePhone($validated['phone']),
+            'subject' => $validated['subject'],
+            'message' => $this->sanitizeMessage($validated['message']),
+        ];
         
-        // For now, we'll just flash a success message
-        $request->session()->flash('success', true);
-        
-        // Store the contact submission in session for demo purposes
-        $request->session()->flash('contact_data', $validated);
+        try {
+            // Save to database
+            $contactMessage = \App\Models\ContactMessage::create([
+                'name' => $sanitizedData['name'],
+                'email' => $sanitizedData['email'],
+                'phone' => $sanitizedData['phone'],
+                'subject' => $sanitizedData['subject'],
+                'message' => $sanitizedData['message'],
+                'ip_address' => $request->ip(),
+                'user_agent' => $this->sanitizeUserAgent($request->userAgent()),
+                'status' => 'unread'
+            ]);
+            
+            // Send email notification to admin
+            try {
+                $adminEmail = config('mail.from.address', 'admin@globalskyfleet.com');
+                \Mail::to($adminEmail)->send(new \App\Mail\ContactMessageMail($contactMessage));
+                
+                // Also send to support email if different
+                $supportEmail = 'support@globalskyfleet.com';
+                if ($supportEmail && $supportEmail !== $adminEmail) {
+                    \Mail::to($supportEmail)->send(new \App\Mail\ContactMessageMail($contactMessage));
+                }
+                
+            } catch (\Exception $e) {
+                \Log::error('Failed to send contact email: ' . $e->getMessage());
+                // Don't show error to user, just log it
+            }
+            
+            // Create in-app notification for admin users
+            $this->createAdminNotification($contactMessage);
+            
+            // Flash success message
+            $request->session()->flash('success', 'Message sent successfully! Our team will get back to you within 24 hours.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Contact form submission error: ' . $e->getMessage());
+            
+            // Flash error message
+            $request->session()->flash('error', 'Failed to send message. Please try again or contact us directly.');
+            
+            return redirect()->route('contact')
+                ->withInput()
+                ->withErrors(['general' => 'Failed to send message. Please try again.']);
+        }
         
         return redirect()->route('contact');
     }
+
+    // Helper sanitization methods
+    private function sanitizeInput($input)
+    {
+        // Remove HTML tags
+        $input = strip_tags($input);
+        
+        // Convert special characters to HTML entities
+        $input = htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Remove extra whitespace
+        $input = trim($input);
+        
+        return $input;
+    }
+
+    private function sanitizePhone($phone)
+    {
+        // Remove all non-numeric characters except +, -, (, ), ., and space
+        $phone = preg_replace('/[^\+\d\s\-\(\)\.]/', '', $phone);
+        
+        return trim($phone);
+    }
+
+    private function sanitizeMessage($message)
+    {
+        // Allow some basic HTML for formatting, but sanitize it
+        $allowedTags = '<p><br><b><strong><i><em><ul><ol><li>';
+        $message = strip_tags($message, $allowedTags);
+        
+        // Convert remaining HTML entities
+        $message = htmlspecialchars($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Limit line breaks to prevent flooding
+        $message = preg_replace('/(\r?\n){3,}/', "\n\n", $message);
+        
+        return trim($message);
+    }
+
+    private function sanitizeUserAgent($userAgent)
+    {
+        if (empty($userAgent)) {
+            return 'Unknown';
+        }
+        
+        // Limit length and sanitize
+        $userAgent = substr($userAgent, 0, 255);
+        $userAgent = htmlspecialchars($userAgent, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        return $userAgent;
+    }
+
+  private function createAdminNotification($contactMessage)
+{
+    try {
+        // Get all admin users
+        $adminUsers = \App\Models\User::where('role', 'admin', 'super_admin')->get();
+        
+        foreach ($adminUsers as $admin) {
+            $admin->notify(new \App\Notifications\NewContactMessageNotification($contactMessage));
+        }
+        
+        \Log::info('Admin notifications created for contact message #' . $contactMessage->id);
+    } catch (\Exception $e) {
+        \Log::error('Failed to create admin notification: ' . $e->getMessage());
+    }
+}
 
     // REMOVED: login(), loginSubmit(), register(), registerSubmit(), passwordRequest(), socialLogin()
     // These are now handled by Auth controllers
@@ -209,5 +390,50 @@ class PageController extends Controller
     public function contactSales()
     {
         return view('pages.contact-sales'); // Create this view if needed
+    }
+
+    public function airFreight()
+    {
+        return view('pages.services.air-freight', [
+            'title' => 'Air Freight Services | GlobalSkyFleet',
+            'description' => 'Fast and reliable air freight solutions for time-sensitive shipments. International air cargo services with real-time tracking.',
+            'keywords' => 'air freight, air cargo, international air shipping, air freight services, express air freight'
+        ]);
+    }
+
+    public function seaFreight()
+    {
+        return view('pages.services.sea-freight', [
+            'title' => 'Sea Freight & Ocean Shipping | GlobalSkyFleet',
+            'description' => 'Cost-effective sea freight solutions for bulk shipments. FCL and LCL container shipping worldwide.',
+            'keywords' => 'sea freight, ocean shipping, container shipping, FCL, LCL, maritime logistics'
+        ]);
+    }
+
+    public function roadCourier()
+    {
+        return view('pages.services.road-courier', [
+            'title' => 'Road Courier & Domestic Shipping | GlobalSkyFleet',
+            'description' => 'Reliable road courier services for domestic and cross-border shipments. Fast delivery with comprehensive tracking.',
+            'keywords' => 'road courier, domestic shipping, trucking, land transport, cross-border shipping'
+        ]);
+    }
+
+    public function expressDelivery()
+    {
+        return view('pages.services.express-delivery', [
+            'title' => 'Express Delivery Services | GlobalSkyFleet',
+            'description' => 'Priority express delivery for urgent shipments. Same-day and next-day delivery options available.',
+            'keywords' => 'express delivery, same-day delivery, next-day delivery, priority shipping, urgent courier'
+        ]);
+    }
+
+    public function warehousing()
+    {
+        return view('pages.services.warehousing', [
+            'title' => 'Warehousing & Logistics Solutions | GlobalSkyFleet',
+            'description' => 'Secure warehousing and inventory management solutions. Storage, fulfillment, and distribution services.',
+            'keywords' => 'warehousing, storage solutions, inventory management, fulfillment, logistics, distribution'
+        ]);
     }
 }

@@ -8,6 +8,7 @@
 
 @section('content')
     <!-- Hero Section -->
+  
     <section class="about-hero">
         <img src="https://readdy.ai/api/search-image?query=modern%20logistics%20warehouse%20team%20of%20diverse%20professionals%20working%20together%20with%20cargo%20operations%20in%20background%20bright%20professional%20corporate%20environment%20teamwork%20collaboration%20global%20business&width=1920&height=800&seq=about1&orientation=landscape" 
              alt="About GlobalSkyFleet" 

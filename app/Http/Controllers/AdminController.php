@@ -8,14 +8,34 @@ use App\Models\Document;
 use App\Models\Payment;
 use App\Models\CryptoPayment;
 use App\Models\CryptoAddress;
+use App\Models\ContactMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\View;
 
 class AdminController extends Controller
 {
+
+ public function __construct()
+    {
+        // Share notification data with all admin views
+        View::composer('layouts.admin', function ($view) {
+            $unreadNotificationsCount = Auth::user()->unreadNotifications()->count();
+            $recentNotifications = Auth::user()->notifications()
+                ->latest()
+                ->limit(5)
+                ->get();
+            
+            $view->with([
+                'unreadNotificationsCount' => $unreadNotificationsCount,
+                'recentNotifications' => $recentNotifications
+            ]);
+        });
+    }
+    
     /**
      * Show admin dashboard
      */
@@ -52,10 +72,14 @@ class AdminController extends Controller
         $totalRevenue = Payment::where('status', 'completed')->sum('amount');
         $stats['total_revenue'] = $totalRevenue;
         
+        // Get unread notifications count for current admin
+        $notificationCount = Auth::user()->unreadNotifications()->count();
+        
         return view('admin.dashboard', compact(
             'stats', 
             'recentShipments', 
-            'recentUsers'
+            'recentUsers',
+            'notificationCount'
         ));
     }
     
@@ -1014,15 +1038,16 @@ class AdminController extends Controller
             'endDate'
         ));
     }
-    /**
- * Show crypto payment details
- */
-public function showCryptoPayment($id)
-{
-    $payment = CryptoPayment::with(['user', 'invoice', 'verifier'])->findOrFail($id);
     
-    return view('admin.payments.show', compact('payment'));
-}
+    /**
+     * Show crypto payment details
+     */
+    public function showCryptoPayment($id)
+    {
+        $payment = CryptoPayment::with(['user', 'invoice', 'verifier'])->findOrFail($id);
+        
+        return view('admin.payments.show', compact('payment'));
+    }
 
     /**
      * Show settings page
@@ -1031,6 +1056,68 @@ public function showCryptoPayment($id)
     {
         return view('admin.settings.index');
     }
-
     
+    /**
+     * Show contact messages
+     */
+    public function contactMessages()
+    {
+        $messages = ContactMessage::orderBy('created_at', 'desc')->paginate(20);
+        $unreadCount = ContactMessage::where('status', 'unread')->count();
+        
+        return view('admin.contact-messages.index', compact('messages', 'unreadCount'));
+    }
+    
+    /**
+     * Show contact message details
+     */
+    public function showContactMessage($id)
+    {
+        $message = ContactMessage::findOrFail($id);
+        
+        // Mark as read if currently unread
+        if ($message->status === 'unread') {
+            $message->update(['status' => 'read']);
+        }
+        
+        return view('admin.contact-messages.show', compact('message'));
+    }
+    
+    /**
+     * Update contact message status
+     */
+    public function updateContactMessageStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:read,replied,archived',
+            'admin_notes' => 'nullable|string|max:1000'
+        ]);
+        
+        $message = ContactMessage::findOrFail($id);
+        
+        $updateData = ['status' => $request->status];
+        
+        if ($request->status === 'replied') {
+            $updateData['replied_at'] = now();
+        }
+        
+        if ($request->filled('admin_notes')) {
+            $updateData['admin_notes'] = $request->admin_notes;
+        }
+        
+        $message->update($updateData);
+        
+        return redirect()->back()->with('success', 'Message status updated successfully.');
+    }
+    
+    /**
+     * Delete contact message
+     */
+    public function deleteContactMessage($id)
+    {
+        $message = ContactMessage::findOrFail($id);
+        $message->delete();
+        
+        return redirect()->route('admin.contact-messages.index')->with('success', 'Message deleted successfully.');
+    }
 }

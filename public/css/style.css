@@ -179,11 +179,11 @@ h6 {
     color: var(--navy) !important;
 }
 
-.main-nav .navbar-brand img {
+.main-nav .navbar-brand img.default-logo {
     filter: brightness(0) invert(1); /* White logo */
 }
 
-.main-nav.scrolled .navbar-brand img {
+.main-nav.scrolled .navbar-brand img.default-logo {
     filter: brightness(0) saturate(100%) invert(12%) sepia(38%) saturate(1760%)
         hue-rotate(202deg) brightness(92%) contrast(99%);
 }
@@ -556,7 +556,7 @@ h6 {
         var(--navy),
         var(--navy-light)
     );
-    padding: 8rem 0 5rem;
+    padding: 8rem 5rem;
     position: relative;
     overflow: hidden;
 }
@@ -1652,6 +1652,264 @@ h6 {
     }
 }
 
+/* ===== SERVICE PAGES COMMON STYLES ===== */
+
+.service-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(to bottom right, var(--skyblue), var(--navy));
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.service-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    padding: 2rem;
+    height: 100%;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(62, 146, 204, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.feature-icon i {
+    font-size: 1.5rem;
+    color: var(--skyblue);
+}
+
+.service-detail-card {
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 2rem;
+    height: 100%;
+    border-left: 4px solid var(--skyblue);
+}
+
+/* ===== AIR FREIGHT SPECIFIC ===== */
+.air-freight-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #1e40af 100%);
+}
+
+/* ===== SEA FREIGHT SPECIFIC ===== */
+.sea-freight-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%);
+}
+
+/* ===== EXPRESS DELIVERY SPECIFIC ===== */
+.express-hero {
+    background: linear-gradient(135deg, var(--orange) 0%, #dc2626 100%);
+}
+
+/* ===== WAREHOUSING SPECIFIC ===== */
+.warehousing-hero {
+    background: linear-gradient(135deg, var(--skyblue) 0%, #0ea5e9 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .service-icon {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 1.5rem;
+    }
+
+    .service-icon i {
+        font-size: 1.5rem;
+    }
+
+    .feature-card {
+        padding: 1.5rem;
+    }
+}
+
+.top-nav a.active {
+    position: relative;
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
+/* Optional: Add underline indicator */
+.top-nav a.active::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ffcc00; /* DHL yellow color */
+    border-radius: 2px;
+}
+
+/* Hover effect for all links */
+.top-nav a.hover-opacity-100:hover {
+    opacity: 1 !important;
+    transition: opacity 0.2s ease;
+}
+
+/* Purse Bead Indicator Styles */
+.bead-indicator {
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(
+        135deg,
+        #ffcc00 0%,
+        /* DHL Yellow */ #ff9900 25%,
+        /* Orange */ #d40511 50%,
+        /* DHL Red */ #ffcc00 75%,
+        /* Back to Yellow */ #ff9900 100% /* Orange */
+    );
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.1),
+        0 4px 12px rgba(212, 5, 17, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    z-index: 1;
+}
+
+/* Bead inner shine effect */
+.bead-indicator::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    filter: blur(1px);
+}
+
+/* Bead string/chain effect */
+.bead-indicator::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 8px;
+    background: rgba(255, 204, 0, 0.8);
+    border-radius: 1px;
+}
+
+/* Active state - bead appears */
+.bead-indicator.bead-visible {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    animation: bead-glow 2s ease-in-out infinite alternate;
+}
+
+/* Active link text styling */
+.nav-link.active {
+    color: #ffcc00 !important;
+    font-weight: 600;
+    position: relative;
+}
+
+/* Hover effect on beads */
+.nav-item:hover .bead-indicator:not(.bead-visible) {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(0.6);
+    background: rgba(255, 204, 0, 0.5);
+}
+
+/* Bead glow animation */
+@keyframes bead-glow {
+    0% {
+        box-shadow:
+            0 0 0 2px rgba(255, 255, 255, 0.1),
+            0 4px 12px rgba(212, 5, 17, 0.3),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3);
+    }
+    100% {
+        box-shadow:
+            0 0 0 3px rgba(255, 255, 255, 0.2),
+            0 6px 20px rgba(212, 5, 17, 0.5),
+            inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 992px) {
+    .bead-indicator {
+        bottom: -8px;
+        width: 22px;
+        height: 22px;
+    }
+
+    .navbar-collapse .nav-item {
+        padding: 8px 0;
+    }
+}
+
+/* Add subtle hover effect to nav links */
+.nav-link.hover-text-navy:hover {
+    color: #ffcc00 !important;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+/* Bounce animation when page loads */
+@keyframes bead-bounce {
+    0%,
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        transform: translateX(-50%) scale(1.2);
+    }
+}
+
+.bead-indicator.bead-visible {
+    /* ... existing styles ... */
+    animation:
+        bead-glow 2s ease-in-out infinite alternate,
+        bead-bounce 0.6s ease 0.3s;
+}
+
+/* Counter animation styles */
+.counter {
+    transition: all 0.3s ease;
+}
+
+/* Ensure smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Global Reach section specific styles */
+#global-reach {
+    scroll-margin-top: 80px; /* Adjust based on your navbar height */
+}
+
 /* ==================== LOADING OVERLAY ==================== */
 .loading-overlay {
     position: fixed;
@@ -1659,118 +1917,133 @@ h6 {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #0a2463 0%, #1a3375 100%);
+    background: linear-gradient(135deg, #0a2463 0%, #1e40af 100%);
     z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
-.loading-overlay.active {
-    opacity: 1;
-    visibility: visible;
+.loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .loading-container {
     text-align: center;
-    max-width: 400px;
-    padding: 2rem;
+    color: white;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
     position: relative;
 }
 
-/* Plane Animation */
+/* Flying Plane Animation */
 .plane-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 2rem;
-    perspective: 1000px;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 100px;
+    pointer-events: none;
 }
 
 .plane-icon {
-    font-size: 4rem;
-    color: #ffffff;
+    font-size: 60px;
+    color: white;
     position: absolute;
-    top: 50%;
-    left: -50px;
-    transform: translateY(-50%) rotate(45deg);
-    animation: planeTakeoff 2s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
-    z-index: 2;
+    left: -100px;
+    transform: translateY(-50%) rotate(90deg); /* Rotated to face right */
+    animation: flyAcross 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
 }
 
 .plane-trail {
     position: absolute;
+    left: -100px;
     top: 50%;
-    left: 0;
-    width: 200px;
-    height: 2px;
+    transform: translateY(-50%);
+    width: 100px;
+    height: 3px;
     background: linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.8) 30%,
-        rgba(255, 255, 255, 0.4) 70%,
-        rgba(255, 255, 255, 0) 100%
+        transparent 0%,
+        rgba(255, 255, 255, 0.8) 10%,
+        rgba(255, 255, 255, 0.4) 40%,
+        rgba(255, 255, 255, 0.1) 70%,
+        transparent 100%
     );
-    transform: translateY(-50%);
-    animation: trailFade 2s ease-in-out infinite;
+    border-radius: 50%;
+    animation: trailAcross 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    opacity: 0.8;
 }
 
 .plane-clouds {
     position: absolute;
     width: 100%;
     height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
 }
 
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 50%;
-    animation: cloudFloat 3s ease-in-out infinite;
+    opacity: 0;
+    animation: cloudFade 3s ease-out forwards;
 }
 
 .cloud-1 {
-    width: 40px;
-    height: 20px;
+    width: 80px;
+    height: 40px;
     top: 30%;
-    left: 20%;
-    animation-delay: 0s;
-}
-
-.cloud-2 {
-    width: 60px;
-    height: 30px;
-    top: 50%;
-    left: 60%;
+    left: 30%;
     animation-delay: 0.5s;
 }
 
-.cloud-3 {
-    width: 30px;
-    height: 15px;
-    top: 70%;
-    left: 40%;
+.cloud-2 {
+    width: 120px;
+    height: 60px;
+    bottom: 40%;
+    left: 50%;
     animation-delay: 1s;
 }
 
-/* Loading Text */
+.cloud-3 {
+    width: 60px;
+    height: 30px;
+    top: 60%;
+    left: 70%;
+    animation-delay: 1.5s;
+}
+
+/* Loading Text - Appears after plane flies */
 .loading-text {
-    color: white;
-    margin-bottom: 2rem;
+    position: absolute;
+    bottom: 30%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+    animation: fadeInText 0.5s ease-out 3s forwards;
 }
 
 .loading-dots {
-    font-size: 1.5rem;
-    font-weight: 600;
     display: block;
+    font-size: 28px;
+    font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
-.loading-dots .dot {
-    animation: dotPulse 1.5s infinite;
+.loading-dots span.dot {
+    opacity: 0;
+    animation: dotPulse 1.4s infinite;
 }
 
 .loading-dots .dot:nth-child(2) {
@@ -1785,80 +2058,119 @@ h6 {
 
 .loading-subtext {
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    margin: 0;
+    font-size: 16px;
+    margin-top: 0.5rem;
 }
 
 /* Progress Bar */
 .loading-progress {
-    width: 100%;
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
     height: 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
     overflow: hidden;
-    margin-top: 1rem;
+    opacity: 0;
+    animation: fadeInProgress 0.5s ease-out 3.2s forwards;
 }
 
 .progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+    animation: progressLoad 2s ease-in-out 3.2s infinite;
     border-radius: 2px;
-    animation: progressLoad 2s ease-in-out infinite;
 }
 
 /* Animations */
-@keyframes planeTakeoff {
+@keyframes flyAcross {
     0% {
-        left: -50px;
-        transform: translateY(-50%) rotate(45deg) scale(0.8);
+        left: -100px;
+        transform: translateY(-50%) rotate(90deg);
+        opacity: 1;
+    }
+    80% {
+        left: calc(100% - 50px);
+        opacity: 1;
+        transform: translateY(-50%) rotate(90deg);
+    }
+    100% {
+        left: calc(100% + 100px);
         opacity: 0;
+        transform: translateY(-50%) rotate(90deg);
+    }
+}
+
+@keyframes trailAcross {
+    0% {
+        left: -150px;
+        opacity: 0;
+        width: 0;
     }
     20% {
-        opacity: 1;
-        transform: translateY(-50%) rotate(45deg) scale(1);
+        opacity: 0.8;
+        width: 100px;
     }
     80% {
-        left: 250px;
-        transform: translateY(-50%) rotate(45deg) scale(1);
-        opacity: 1;
+        left: calc(100% - 50px);
+        opacity: 0.8;
+        width: 100px;
     }
     100% {
-        left: 250px;
-        transform: translateY(-50%) rotate(45deg) scale(0.8);
+        left: calc(100% + 50px);
         opacity: 0;
+        width: 0;
     }
 }
 
-@keyframes trailFade {
-    0%,
+@keyframes cloudFade {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    20% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    80% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
     100% {
         opacity: 0;
-        transform: translateY(-50%) scaleX(0.5);
-    }
-    20%,
-    80% {
-        opacity: 0.5;
-        transform: translateY(-50%) scaleX(1);
+        transform: scale(1.2);
     }
 }
 
-@keyframes cloudFloat {
-    0%,
-    100% {
-        transform: translateY(0) translateX(0);
-        opacity: 0.3;
+@keyframes fadeInText {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
     }
-    50% {
-        transform: translateY(-10px) translateX(10px);
-        opacity: 0.6;
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInProgress {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
     }
 }
 
 @keyframes dotPulse {
     0%,
     100% {
-        opacity: 0.3;
+        opacity: 0;
     }
     50% {
         opacity: 1;
@@ -1868,23 +2180,23 @@ h6 {
 @keyframes progressLoad {
     0% {
         width: 0%;
-        left: 0;
+        transform: translateX(-100%);
     }
     50% {
         width: 100%;
-        left: 0;
+        transform: translateX(0%);
     }
     100% {
         width: 0%;
-        left: 100%;
+        transform: translateX(100%);
     }
 }
 
 /* For faster animations on form submissions */
 .loading-overlay.fast .plane-icon {
-    animation-duration: 1s;
+    animation-duration: 1.5s;
 }
 
 .loading-overlay.fast .progress-bar {
-    animation-duration: 1s;
+    animation-duration: 1.5s;
 }

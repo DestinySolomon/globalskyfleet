@@ -3,7 +3,7 @@
     <div class="container py-4">
         <div class="row g-4">
             <div class="col-lg-3 col-md-6">
-                <img src="{{ asset('images/logo.png') }}" alt="GlobalSkyFleet Logo" height="40" class="mb-3">
+                <img src="{{ setting('site_logo') ? Storage::url(setting('site_logo')) : asset('images/logo.png') }}" alt="{{ setting('site_name', 'GlobalSkyFleet') }} Logo" height="60" style="width: auto; max-width: 120px; object-fit: contain;" class="mb-3">
                 <p class="text-white opacity-80 small mb-4">
                     Connecting 220+ countries with precision logistics and real-time tracking. Fast, secure, worldwide delivery.
                 </p>

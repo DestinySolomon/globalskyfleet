@@ -13,12 +13,26 @@ use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\AdminHelpController;
+use App\Http\Controllers\ChatController;
+
 
 // Home Page
 Route::get('/', [PageController::class, 'home'])->name('home');
 
 // Other Pages
 Route::get('/services', [PageController::class, 'services'])->name('services');
+
+
+
+// subnav pages routes
+Route::get('/services/air-freight', [PageController::class, 'airFreight'])->name('services.air-freight');
+Route::get('/services/sea-freight', [PageController::class, 'seaFreight'])->name('services.sea-freight');
+Route::get('/services/road-courier', [PageController::class, 'roadCourier'])->name('services.road-courier');
+Route::get('/services/express-delivery', [PageController::class, 'expressDelivery'])->name('services.express-delivery');
+Route::get('/services/warehousing', [PageController::class, 'warehousing'])->name('services.warehousing');
 
 // Tracking routes
 Route::get('/tracking', [ShipmentController::class, 'track'])->name('tracking');
@@ -253,27 +267,98 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/wallets/{id}', [AdminController::class, 'updateWallet'])->name('wallets.update');
     Route::delete('/wallets/{id}', [AdminController::class, 'destroyWallet'])->name('wallets.destroy');
     
-  // In your admin routes group
-Route::get('/payments/crypto', [AdminController::class, 'cryptoPayments'])->name('payments.crypto');
-Route::get('/payments/crypto/{id}', [AdminController::class, 'showCryptoPayment'])->name('payments.crypto.show');
-Route::post('/payments/crypto/{id}/update', [AdminController::class, 'updateCryptoPayment'])->name('payments.update');
-Route::get('/payments/crypto/export', [AdminController::class, 'exportCryptoPayments'])->name('payments.crypto.export');
+    // In your admin routes group
+    Route::get('/payments/crypto', [AdminController::class, 'cryptoPayments'])->name('payments.crypto');
+    Route::get('/payments/crypto/{id}', [AdminController::class, 'showCryptoPayment'])->name('payments.crypto.show');
+    Route::post('/payments/crypto/{id}/update', [AdminController::class, 'updateCryptoPayment'])->name('payments.update');
+    Route::get('/payments/crypto/export', [AdminController::class, 'exportCryptoPayments'])->name('payments.crypto.export');
 
+    // Contact Messages
+    Route::prefix('contact-messages')->name('contact-messages.')->group(function () {
+        Route::get('/', [AdminController::class, 'contactMessages'])->name('index');
+        Route::get('/{id}', [AdminController::class, 'showContactMessage'])->name('show');
+        Route::post('/{id}/status', [AdminController::class, 'updateContactMessageStatus'])->name('update-status');
+        Route::delete('/{id}', [AdminController::class, 'deleteContactMessage'])->name('destroy');
+    });
 
-   
-    
     // Analytics
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
     Route::get('/analytics/export', [AdminController::class, 'exportAnalytics'])->name('analytics.export');
     
+    // ==================== ADMIN PROFILE ROUTES ====================
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [AdminProfileController::class, 'edit'])->name('edit');
+        Route::post('/', [AdminProfileController::class, 'update'])->name('update');
+        Route::put('/', [AdminProfileController::class, 'update']);
+        Route::post('/password', [AdminProfileController::class, 'updatePassword'])->name('password.update');
+        Route::post('/picture', [AdminProfileController::class, 'updateProfilePicture'])->name('picture.update');
+        Route::delete('/picture', [AdminProfileController::class, 'deleteProfilePicture'])->name('picture.delete');
+        
+        // Notification preferences
+        Route::post('/notification-preferences', [AdminProfileController::class, 'updateNotificationPreferences'])->name('notification-preferences');
+        
+        // Shortcut routes for the user dropdown
+        Route::get('/account', [AdminProfileController::class, 'edit'])->name('account');
+        Route::get('/change-password', [AdminProfileController::class, 'showChangePasswordForm'])->name('change-password');
+    });
+    
+    // ==================== ADMIN NOTIFICATION ROUTES ====================
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        // List all notifications
+        Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
+        
+        // Get unread count (for badge)
+        Route::get('/count', [AdminNotificationController::class, 'unreadCount'])->name('count');
+        
+        // Get recent notifications for dropdown (AJAX)
+        Route::get('/recent', [AdminNotificationController::class, 'getRecentNotifications'])->name('get-recent');
+        
+        // Mark single notification as read
+        Route::post('/{notification}/mark-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-read');
+        
+        // Read and redirect
+        Route::get('/{notification}/read-and-redirect', [AdminNotificationController::class, 'readAndRedirect'])->name('read-and-redirect');
+        
+        // Mark all notifications as read
+        Route::post('/mark-all-read', [AdminNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        
+        // Delete notification
+        Route::delete('/{notification}', [AdminNotificationController::class, 'destroy'])->name('destroy');
+        
+        // Clear all notifications
+        Route::delete('/', [AdminNotificationController::class, 'clearAll'])->name('clear-all');
+    });
+    
+    // ==================== ADMIN HELP ROUTES ====================
+    Route::get('/help', [AdminHelpController::class, 'index'])->name('help');
+    Route::get('/help/{topic}', [AdminHelpController::class, 'show'])->name('help.show');
     
     // Settings Routes
-Route::prefix('settings')->name('settings.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('index');
-    Route::put('/', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('update');
-    Route::get('/email', [\App\Http\Controllers\Admin\SettingsController::class, 'emailTemplates'])->name('email');
-    Route::post('/email/{template}', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmailTemplate'])->name('email.update');
-    Route::get('/clear-cache', [\App\Http\Controllers\Admin\SettingsController::class, 'clearCache'])->name('clear-cache');
-    Route::get('/backup', [\App\Http\Controllers\Admin\SettingsController::class, 'backupDatabase'])->name('backup');
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::put('/', [SettingsController::class, 'update'])->name('update');
+        Route::get('/email', [SettingsController::class, 'emailTemplates'])->name('email');
+        Route::post('/email/{template}', [SettingsController::class, 'updateEmailTemplate'])->name('email.update');
+        Route::get('/clear-cache', [SettingsController::class, 'clearCache'])->name('clear-cache');
+        Route::get('/backup', [SettingsController::class, 'backupDatabase'])->name('backup');
+    });
 });
+
+
+
+// Broadcasting auth route (required for private channels)
+Broadcast::routes(['middleware' => ['web', 'auth']]);
+
+// Chat Routes
+Route::prefix('chat')->name('chat.')->group(function () {
+    Route::post('/conversation', [ChatController::class, 'getConversation'])->name('conversation');
+    Route::post('/message/send', [ChatController::class, 'sendMessage'])->name('message.send');
+    
+    // Admin routes
+    Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/conversations', [ChatController::class, 'getAdminConversations'])->name('conversations');
+        Route::get('/chat', function () {
+            return view('admin.chat-simple');
+        })->name('chat');
+    });
 });

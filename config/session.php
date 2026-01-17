@@ -32,9 +32,9 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    'lifetime' => (int) env('SESSION_LIFETIME', 30), // Changed from 120 to 30 minutes
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', true), // Changed from false to true
 
     /*
     |--------------------------------------------------------------------------
@@ -129,7 +129,7 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+        Str::slug((string) env('APP_NAME', 'laravel')).'_session' // Changed from - to _ for consistency
     ),
 
     /*
@@ -169,7 +169,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', null),
 
     /*
     |--------------------------------------------------------------------------

@@ -10,6 +10,13 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
+    <!-- Favicon -->
+    @if(setting('site_favicon'))
+        <link rel="icon" type="image/x-icon" href="{{ Storage::url(setting('site_favicon')) }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @endif
+    
     <!-- Open Graph -->
     <meta property="og:title" content="@yield('og:title', 'GlobalSkyFleet - Fast, Secure, Worldwide Delivery')">
     <meta property="og:description" content="@yield('og:description', 'International courier and logistics services to 220+ countries with real-time tracking and 24/7 support.')">
@@ -32,13 +39,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    {{-- AOS Animation --}}
+     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.0/dist/aos.css">
+
     <!-- Custom CSS -->
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+
+        <!-- Pusher JS CDN -->
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     
     <!-- Additional Styles -->
     @stack('styles')
 </head>
 <body>
+
+    
       <!-- Loading Overlay -->
     @include('partials.loading-overlay')
     <!-- Top Navigation (Sub Navbar) -->
@@ -50,8 +65,15 @@
     <!-- Main Content -->
     @yield('content')
 
+    <!-- Live Chat Button -->
+@include('partials.live-chat-simple')
+
     <!-- Footer -->
     @include('layouts.partials.footer')
+
+
+      <!-- Back to Top Button -->
+    @include('partials.back-to-top')
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -61,6 +83,20 @@
     
     <!-- Additional Scripts -->
     @stack('scripts')
-      @include('partials.dashboard-button')
+
+
+{{-- In the body before closing --}}
+<script>
+    // Initialize Pusher globally
+    window.PUSHER_APP_KEY = '{{ env("PUSHER_APP_KEY") }}';
+    window.PUSHER_APP_CLUSTER = '{{ env("PUSHER_APP_CLUSTER") }}';
+
+
+        AOS.init({
+            duration: 1200,
+        })
+</script>  
+
+<script src="https://unpkg.com/aos@2.3.0/dist/aos.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!-- Global Reach Section -->
-<section class="section-padding bg-navy position-relative overflow-hidden">
+<section class="section-padding bg-navy position-relative overflow-hidden" id="global-reach">
     <img src="https://readdy.ai/api/search-image?query=abstract%20world%20map%20with%20glowing%20connection%20lines%20network%20routes%20between%20continents%20dark%20navy%20blue%20background%20minimalist%20style%20global%20logistics%20visualization%20digital%20network%20pattern&width=1920&height=1080&seq=map1&orientation=landscape" alt="World Map" class="map-overlay">
     
     <div class="container position-relative" style="z-index: 2;">
@@ -18,22 +18,22 @@
         
         <div class="row text-center">
             <div class="col-6 col-lg-3 mb-4 mb-lg-0 stat-border">
-                <div class="display-4 fw-bold text-white mb-2">220+</div>
+                <div class="display-4 fw-bold text-white mb-2 counter" data-target="220" data-suffix="+">0</div>
                 <div class="text-white opacity-70">Countries</div>
             </div>
             
             <div class="col-6 col-lg-3 mb-4 mb-lg-0 stat-border">
-                <div class="display-4 fw-bold text-white mb-2">500+</div>
+                <div class="display-4 fw-bold text-white mb-2 counter" data-target="500" data-suffix="+">0</div>
                 <div class="text-white opacity-70">Hubs</div>
             </div>
             
             <div class="col-6 col-lg-3 mb-4 mb-lg-0 stat-border">
-                <div class="display-4 fw-bold text-white mb-2">10M+</div>
+                <div class="display-4 fw-bold text-white mb-2 counter" data-target="10" data-suffix="M+">0</div>
                 <div class="text-white opacity-70">Shipments/Year</div>
             </div>
             
             <div class="col-6 col-lg-3 stat-border">
-                <div class="display-4 fw-bold text-white mb-2">99.8%</div>
+                <div class="display-4 fw-bold text-white mb-2 counter" data-target="99.8" data-suffix="%">0</div>
                 <div class="text-white opacity-70">On-Time</div>
             </div>
         </div>

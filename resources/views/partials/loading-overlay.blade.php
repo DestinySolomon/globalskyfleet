@@ -1,4 +1,4 @@
-<!-- Loading Overlay with Plane Animation -->
+{{-- <!-- Loading Overlay with Plane Animation -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-container">
         <!-- Plane Icon with Animation -->
@@ -28,4 +28,4 @@
             <div class="progress-bar"></div>
         </div>
     </div>
-</div>
+</div> --}}
