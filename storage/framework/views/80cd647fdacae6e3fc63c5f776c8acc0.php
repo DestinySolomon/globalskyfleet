@@ -3,7 +3,7 @@
     <div class="container py-4">
         <div class="row g-4">
             <div class="col-lg-3 col-md-6">
-                <img src="{{ setting('site_logo') ? Storage::url(setting('site_logo')) : asset('images/logo.png') }}" alt="{{ setting('site_name', 'GlobalSkyFleet') }} Logo" height="60" style="width: auto; max-width: 120px; object-fit: contain;" class="mb-3">
+                <img src="<?php echo e(setting('site_logo') ? Storage::url(setting('site_logo')) : asset('images/logo.png')); ?>" alt="<?php echo e(setting('site_name', 'GlobalSkyFleet')); ?> Logo" height="60" style="width: auto; max-width: 120px; object-fit: contain;" class="mb-3">
                 <p class="text-white opacity-80 small mb-4">
                     Connecting 220+ countries with precision logistics and real-time tracking. Fast, secure, worldwide delivery.
                 </p>
@@ -26,12 +26,12 @@
             <div class="col-lg-3 col-md-6">
                 <h4 class="h5 fw-semibold mb-4">Quick Links</h4>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><a href="{{ route('home') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Home</a></li>
-                    <li class="mb-2"><a href="{{ route('services') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Services</a></li>
-                    <li class="mb-2"><a href="{{ route('tracking') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Track Shipment</a></li>
-                    <li class="mb-2"><a href="{{ route('quote') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Get a Quote</a></li>
-                    <li class="mb-2"><a href="{{ route('about') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">About Us</a></li>
-                    <li><a href="{{ route('contact') }}" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Contact</a></li>
+                    <li class="mb-2"><a href="<?php echo e(route('home')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Home</a></li>
+                    <li class="mb-2"><a href="<?php echo e(route('services')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Services</a></li>
+                    <li class="mb-2"><a href="<?php echo e(route('tracking')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Track Shipment</a></li>
+                    <li class="mb-2"><a href="<?php echo e(route('quote')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Get a Quote</a></li>
+                    <li class="mb-2"><a href="<?php echo e(route('about')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">About Us</a></li>
+                    <li><a href="<?php echo e(route('contact')); ?>" class="text-white opacity-80 hover-opacity-100 text-decoration-none small">Contact</a></li>
                 </ul>
             </div>
             
@@ -52,8 +52,8 @@
                 <p class="text-white opacity-80 small mb-3">
                     Subscribe to our newsletter for the latest updates and offers.
                 </p>
-                <form action="{{ route('newsletter.subscribe') }}" method="POST">
-                    @csrf
+                <form action="<?php echo e(route('newsletter.subscribe')); ?>" method="POST">
+                    <?php echo csrf_field(); ?>
                     <div class="mb-3">
                         <input type="email" name="email" class="form-control newsletter-input rounded-3 py-2 px-3 small" placeholder="Your email address" required>
                     </div>
@@ -69,16 +69,16 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
             <div class="mb-3 mb-md-0">
                 <p class="text-white opacity-60 small mb-2">
-                    © {{ date('Y') }} GlobalSkyFleet. All rights reserved.
+                    © <?php echo e(date('Y')); ?> GlobalSkyFleet. All rights reserved.
                 </p>
                 <p class="text-white opacity-60 small mb-0">
                     Site by <a href="https://github.com/DestinySolomon" target="_blank" rel="noopener noreferrer" class="text-white opacity-60 hover-opacity-100 text-decoration-none">Dee</a>
                 </p>
             </div>
             <div class="d-flex gap-4">
-                <a href="{{ route('terms') }}" class="text-white opacity-60 hover-opacity-100 text-decoration-none small">Terms of Service</a>
-                <a href="{{ route('privacy') }}" class="text-white opacity-60 hover-opacity-100 text-decoration-none small">Privacy Policy</a>
+                <a href="<?php echo e(route('terms')); ?>" class="text-white opacity-60 hover-opacity-100 text-decoration-none small">Terms of Service</a>
+                <a href="<?php echo e(route('privacy')); ?>" class="text-white opacity-60 hover-opacity-100 text-decoration-none small">Privacy Policy</a>
             </div>
         </div>
     </div>
-</footer>
+</footer><?php /**PATH C:\Users\Dee\Desktop\General\globalskyfleet\resources\views/layouts/partials/footer.blade.php ENDPATH**/ ?>
