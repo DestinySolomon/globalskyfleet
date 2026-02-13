@@ -184,6 +184,17 @@
                                     Document Delivery (3-7 days) - Secure
                                 </option>
                             </select>
+
+                                  {{-- Content description --}}
+                            <div class="col-md-6">
+                                <label class="form-label">Content Description *</label>
+                                <input type="text" 
+                                       name="content_description" 
+                                       class="form-control" 
+                                       value="{{ old('content_description') }}"
+                                       required 
+                                       placeholder="e.g., Electronics, Documents, Clothing">
+                            </div>
                             
                             <!-- Weight Limits Info Box -->
                             <div id="service_weight_info" class="alert alert-info mt-3" style="display: none;">
