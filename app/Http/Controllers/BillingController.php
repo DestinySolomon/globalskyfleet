@@ -9,9 +9,11 @@ use App\Models\Invoice;
 use App\Models\CryptoPayment;
 use App\Models\CryptoAddress;
 use App\Models\ExchangeRate;
+use App\Models\Shipment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\ExchangeRateService;
 use Illuminate\Support\Facades\Http;
+
 
 class BillingController extends Controller
 {
@@ -67,7 +69,7 @@ class BillingController extends Controller
     public function showInvoice(Invoice $invoice)
     {
         // Check if user owns this invoice
-        if ($invoice->user_id !== Auth::id()) {
+        if ($invoice->user_id != Auth::id()) {
             abort(403, 'Unauthorized');
         }
         
@@ -80,7 +82,7 @@ class BillingController extends Controller
     public function downloadInvoice(Invoice $invoice)
     {
         // Check if user owns this invoice
-        if ($invoice->user_id !== Auth::id()) {
+        if ($invoice->user_id != Auth::id()) {
             abort(403, 'Unauthorized');
         }
         
@@ -105,8 +107,27 @@ class BillingController extends Controller
 
 public function payInvoice(Invoice $invoice)
 {
+    // ===== DETAILED DEBUG LOGGING =====
+    \Log::info('BILLING PAY - AUTHORIZATION CHECK', [
+        'route_invoice_id' => $invoice->id,
+        'route_invoice_user_id' => $invoice->user_id,
+        'auth_user_id' => Auth::id(),
+        'auth_user_email' => Auth::user()->email,
+        'fresh_invoice_user_id' => \DB::table('invoices')->where('id', $invoice->id)->value('user_id'),
+        'match' => $invoice->user_id === Auth::id(),
+        'session_id' => session()->getId()
+    ]);
+    
+    // Refresh the invoice from database to ensure we have latest data
+    $invoice->refresh();
+    
     // Check if user owns this invoice
-    if ($invoice->user_id !== Auth::id()) {
+    if ($invoice->user_id != Auth::id()) {
+        \Log::error('AUTHORIZATION FAILED', [
+            'expected_user_id' => Auth::id(),
+            'invoice_user_id' => $invoice->user_id,
+            'invoice_id' => $invoice->id
+        ]);
         abort(403, 'Unauthorized');
     }
     
@@ -178,7 +199,7 @@ public function getRates()
     public function submitPayment(Request $request, Invoice $invoice)
     {
         // Check if user owns this invoice
-        if ($invoice->user_id !== Auth::id()) {
+        if ($invoice->user_id != Auth::id()) {
             abort(403, 'Unauthorized');
         }
         

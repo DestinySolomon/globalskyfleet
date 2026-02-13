@@ -42,7 +42,9 @@ class SettingsController extends Controller
                 'notify_payment_received', 'notify_invoice_created', 'notify_document_uploaded',
                 'password_require_numbers', 'password_require_special_chars', 'enable_2fa'
             ])) {
-                Setting::set($key, $request->has($key) ? '1' : '0', 'boolean');
+                // Convert value to boolean: '1' = true, '0' = false
+                $boolValue = ($value === '1' || $value === 1 || $value === true) ? '1' : '0';
+                Setting::set($key, $boolValue, 'boolean');
                 continue;
             }
             

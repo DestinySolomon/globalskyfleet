@@ -17,6 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register alias middleware
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'active' => \App\Http\Middleware\CheckUserActive::class,
+        ]);
+
+        // Trust all proxies - Fix for 419 errors on cPanel/Nginx
+        $middleware->trustProxies(at: '*');
+        
+        // Register web middleware group - runs after auth
+        $middleware->web(append: [
+            \App\Http\Middleware\MaintenanceMode::class,
+            \App\Http\Middleware\CheckUserActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

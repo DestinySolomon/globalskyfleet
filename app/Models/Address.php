@@ -30,6 +30,7 @@ class Address extends Model
         'is_default' => 'boolean',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'user_id' => 'integer',
     ];
 
     // Relationship: Address belongs to a User

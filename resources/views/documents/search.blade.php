@@ -168,7 +168,7 @@
                                         {{ $document->created_at->format('M d, Y') }}
                                     </div>
                                     <small class="text-muted">
-                                        {{ $document->created_at->format('h:i A') }}
+                                        {{ formatUserTime($document->created_at, 'h:i A') }}
                                     </small>
                                 </td>
                                 <td>

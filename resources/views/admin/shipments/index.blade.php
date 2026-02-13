@@ -42,7 +42,7 @@
         <h3 class="table-title">All Shipments ({{ $shipments->total() }})</h3>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover datatable">
+        <table class="table table-hover datatable ">
             <thead>
                 <tr>
                     <th>Tracking #</th>
@@ -83,13 +83,25 @@
                         @endif
                     </td>
                     <td>
-                        <span class="badge badge-{{ str_replace('_', '-', $shipment->status) }}">
+                        @php
+                            $statusColors = [
+                                'pending' => 'warning',
+                                'confirmed' => 'info',
+                                'in_transit' => 'primary',
+                                'out_for_delivery' => 'info',
+                                'delivered' => 'success',
+                                'cancelled' => 'danger',
+                                'returned' => 'secondary',
+                            ];
+                            $color = $statusColors[$shipment->status] ?? 'secondary';
+                        @endphp
+                        <span class="badge bg-{{ $color }}">
                             {{ ucfirst(str_replace('_', ' ', $shipment->status)) }}
                         </span>
                     </td>
                     <td>{{ $shipment->weight }} kg</td>
                     <td>${{ number_format($shipment->declared_value, 2) }}</td>
-                    <td>{{ $shipment->created_at->format('M d, Y') }}</td>
+                    <td>{{ formatUserTime($shipment->created_at, 'M d, Y') }}</td></td>
                     <td>
                         <a href="{{ route('admin.shipments.show', $shipment->id) }}" 
                            class="btn btn-sm btn-primary" title="View Details">

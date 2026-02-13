@@ -68,6 +68,8 @@ class AdminProfileController extends Controller
         
         if ($request->has('timezone')) {
             $settings['display']['timezone'] = $request->timezone;
+            // Also update the timezone column directly
+            $validated['timezone'] = $request->timezone;
         }
         
         if ($request->has('date_format')) {

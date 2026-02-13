@@ -20,6 +20,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'timezone',
         'password',
         'phone',
         'profile_picture',
@@ -32,6 +33,9 @@ class User extends Authenticatable
         'password_changed_at',
         'last_login_at',
         'last_login_ip',
+        'is_active',
+        'deactivated_at',
+        'deactivation_reason',
     ];
 
     /**
@@ -61,6 +65,8 @@ class User extends Authenticatable
             'two_factor_recovery_codes' => 'array',
             'password_changed_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'is_active' => 'boolean',
+            'deactivated_at' => 'datetime',
         ];
     }
 
@@ -302,8 +308,10 @@ public function isAdminOrSuperAdmin()
      */
     public function getProfilePictureUrlAttribute()
     {
-        if ($this->profile_picture && Storage::disk('public')->exists('profile-pictures/' . $this->profile_picture)) {
-            return Storage::disk('public')->url('profile-pictures/' . $this->profile_picture);
+        if ($this->profile_picture) {
+            // Always return the URL if profile_picture is set
+            // The symlink should handle serving the file
+            return '/storage/profile-pictures/' . $this->profile_picture;
         }
         
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=0a2463';
@@ -426,6 +434,46 @@ public function updateNotificationPreferences(array $preferences)
     
     $this->notification_preferences = $updated;
     $this->save();
+}
+
+/**
+ * Deactivate the user account
+ */
+public function deactivate($reason = null)
+{
+    $this->update([
+        'is_active' => false,
+        'deactivated_at' => now(),
+        'deactivation_reason' => $reason,
+    ]);
+}
+
+/**
+ * Reactivate the user account
+ */
+public function reactivate()
+{
+    $this->update([
+        'is_active' => true,
+        'deactivated_at' => null,
+        'deactivation_reason' => null,
+    ]);
+}
+
+/**
+ * Check if account is active
+ */
+public function isActive()
+{
+    return $this->is_active;
+}
+
+/**
+ * Check if account is deactivated
+ */
+public function isDeactivated()
+{
+    return !$this->is_active;
 }
 
 }

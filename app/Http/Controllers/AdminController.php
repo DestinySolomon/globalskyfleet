@@ -232,6 +232,7 @@ class AdminController extends Controller
                 'status' => $request->status,
                 'location' => $request->location ?? $shipment->current_location,
                 'description' => $request->description ?? 'Status updated by admin',
+                'scan_datetime' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -245,6 +246,60 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Failed to update shipment status: ' . $e->getMessage());
         }
     }
+
+
+    /**
+ * Update shipment coordinates (latitude/longitude)
+ */
+public function updateShipmentCoordinates(Request $request, $id)
+{
+    $request->validate([
+        'latitude' => ['required', 'numeric', 'between:-90,90'],
+        'longitude' => ['required', 'numeric', 'between:-180,180'],
+        'update_status_history' => ['nullable', 'boolean'],
+    ]);
+
+    DB::beginTransaction();
+    
+    try {
+        $shipment = Shipment::findOrFail($id);
+        
+        // Update shipment coordinates
+        $shipment->latitude = $request->latitude;
+        $shipment->longitude = $request->longitude;
+        $shipment->location_updated_at = now();
+        
+        // If current_location is empty, set it
+        if (!$shipment->current_location && $request->filled('location_name')) {
+            $shipment->current_location = $request->location_name;
+        }
+        
+        $shipment->save();
+        
+        // Optionally add to status history
+        if ($request->boolean('update_status_history')) {
+            DB::table('shipment_status_history')->insert([
+                'shipment_id' => $shipment->id,
+                'status' => $shipment->status,
+                'location' => $shipment->current_location ?? 'Coordinates Updated',
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'description' => 'Location coordinates updated by admin',
+                'scan_datetime' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        
+        DB::commit();
+        
+        return redirect()->back()->with('success', 'Coordinates updated successfully!');
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Failed to update coordinates: ' . $e->getMessage());
+    }
+}
     
     /**
      * Show all users
@@ -319,29 +374,76 @@ class AdminController extends Controller
     }
     
     /**
-     * Delete user
+     * Delete user and all related data
      */
     public function destroyUser($id)
     {
-        // Prevent user from deleting themselves
-        if (auth()-> auth::id() == $id) {
+        // Prevent admins from deleting themselves
+        if (Auth::id() == $id && in_array(Auth::user()->role, ['admin', 'super_admin'])) {
             return redirect()->route('admin.users')
-                ->with('error', 'You cannot delete your own account.');
+                ->with('error', 'Admins and Super Admins cannot delete their own accounts.');
         }
         
         try {
             $user = User::findOrFail($id);
             
-            // You might want to soft delete instead
-            // $user->delete(); // This will cascade delete related records
+            \DB::beginTransaction();
             
-            // Or deactivate instead of delete
-            $user->delete(); // Or use soft delete if you have it
+            // 1. Delete shipments (this will cascade to shipment_status_history, payments, customs_declarations, etc.)
+            \DB::table('shipments')->where('user_id', $id)->delete();
+            
+            // 2. Delete documents
+            \DB::table('documents')->where('user_id', $id)->delete();
+            
+            // 3. Delete invoices (if they exist)
+            if (\Schema::hasTable('invoices')) {
+                \DB::table('invoices')->where('user_id', $id)->delete();
+            }
+            
+            // 4. Delete crypto payments (if they exist)
+            if (\Schema::hasTable('crypto_payments')) {
+                \DB::table('crypto_payments')->where('user_id', $id)->delete();
+            }
+            
+            // 5. Delete chat conversations and messages
+            if (\Schema::hasTable('chat_conversations')) {
+                $conversationIds = \DB::table('chat_conversations')
+                    ->where('user_id', $id)
+                    ->pluck('id');
+                
+                if ($conversationIds->isNotEmpty()) {
+                    \DB::table('chat_messages')->whereIn('conversation_id', $conversationIds)->delete();
+                    \DB::table('chat_conversations')->where('user_id', $id)->delete();
+                }
+            }
+            
+            // 6. Delete contact messages (if sent by this user)
+            if (\Schema::hasTable('contact_messages')) {
+                \DB::table('contact_messages')->where('email', $user->email)->delete();
+            }
+            
+            // 7. Delete notifications
+            \DB::table('notifications')->where('notifiable_id', $id)->where('notifiable_type', 'App\\Models\\User')->delete();
+            
+            // 8. Delete addresses (now safe since no shipments reference them)
+            \DB::table('addresses')->where('user_id', $id)->delete();
+            
+            // 9. Finally delete the user
+            $user->delete();
+            
+            \DB::commit();
             
             return redirect()->route('admin.users')
-                ->with('success', 'User deleted successfully!');
+                ->with('success', 'User and all associated data deleted successfully!');
                 
         } catch (\Exception $e) {
+            \DB::rollBack();
+            
+            \Log::error('Error deleting user: ' . $e->getMessage(), [
+                'user_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('admin.users')
                 ->with('error', 'Error deleting user: ' . $e->getMessage());
         }
@@ -543,7 +645,7 @@ class AdminController extends Controller
         DB::beginTransaction();
         
         try {
-            $payment = CryptoPayment::findOrFail($id);
+            $payment = CryptoPayment::with('invoice')->findOrFail($id);
             
             // Update payment status
             $payment->status = $request->status;
@@ -575,11 +677,10 @@ class AdminController extends Controller
             
             $payment->save();
             
-            // If payment is completed, also update invoice status
-            if ($request->status === 'completed' && $payment->invoice) {
+            // If payment is confirmed or completed, also update invoice status
+            if (($request->status === 'confirmed' || $request->status === 'completed') && $payment->invoice) {
                 $payment->invoice->update([
                     'status' => 'paid',
-                    'paid_at' => now(),
                 ]);
             }
             
@@ -708,21 +809,30 @@ class AdminController extends Controller
      */
     public function storeWallet(Request $request)
     {
-        $validated = $request->validate([
-            'crypto_type' => 'required|in:BTC,USDT_ERC20,USDT_TRC20',
-            'address' => 'required|string|max:255|unique:crypto_addresses,address',
-            'label' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-        
-        $validated['created_by'] = Auth::id();
-        $validated['is_active'] = $request->boolean('is_active', true);
-        
-        CryptoAddress::create($validated);
-        
-        return redirect()->route('admin.wallets')
-            ->with('success', 'Wallet address added successfully!');
+        try {
+            $validated = $request->validate([
+                'crypto_type' => 'required|in:BTC,USDT_ERC20,USDT_TRC20',
+                'address' => 'required|string|max:255|unique:crypto_addresses,address',
+                'label' => 'required|string|max:255',
+                'notes' => 'nullable|string',
+            ]);
+            
+            $validated['created_by'] = Auth::id();
+            $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            
+            $wallet = CryptoAddress::create($validated);
+            
+            return redirect()->route('admin.wallets')
+                ->with('success', 'Wallet address added successfully!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create wallet: ' . $e->getMessage());
+        }
     }
     
     /**
@@ -763,14 +873,7 @@ class AdminController extends Controller
     {
         $wallet = CryptoAddress::findOrFail($id);
         
-        // Check if wallet has been used
-        $used = CryptoPayment::where('payment_address', $wallet->address)->exists();
-        
-        if ($used) {
-            return redirect()->route('admin.wallets')
-                ->with('error', 'Cannot delete wallet that has been used for payments.');
-        }
-        
+        // Delete wallet (used or not)
         $wallet->delete();
         
         return redirect()->route('admin.wallets')

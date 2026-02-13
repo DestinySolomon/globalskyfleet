@@ -180,7 +180,7 @@
                                     <td>
                                         <small>{{ $user->created_at->format('M d, Y') }}</small>
                                         <br>
-                                        <small class="text-muted">{{ $user->created_at->format('H:i') }}</small>
+                                        <small class="text-muted">{{ formatUserTime($user->created_at, 'H:i') }}</small>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">

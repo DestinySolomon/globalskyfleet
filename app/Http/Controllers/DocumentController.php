@@ -172,7 +172,7 @@ class DocumentController extends Controller
     public function show(Document $document)
     {
         // Authorization - user can only view their own documents unless admin
-        if ($document->user_id !== Auth::id() && !$this->isAdmin()) {
+        if ($document->user_id != Auth::id() && !$this->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -191,7 +191,7 @@ class DocumentController extends Controller
     public function view(Document $document)
     {
         // Authorization - user can only view their own documents unless admin
-        if ($document->user_id !== Auth::id() && !$this->isAdmin()) {
+        if ($document->user_id != Auth::id() && !$this->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -215,7 +215,7 @@ class DocumentController extends Controller
     public function destroy(Document $document)
     {
         // Authorization - user can only delete their own documents unless admin
-        if ($document->user_id !== Auth::id() && !$this->isAdmin()) {
+        if ($document->user_id != Auth::id() && !$this->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -243,7 +243,7 @@ class DocumentController extends Controller
     public function generateShippingLabel(Shipment $shipment)
     {
         // Authorization - user can only generate labels for their own shipments unless admin
-        if ($shipment->user_id !== Auth::id() && !$this->isAdmin()) {
+        if ($shipment->user_id != Auth::id() && !$this->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -270,7 +270,7 @@ class DocumentController extends Controller
     public function generateInvoice(Shipment $shipment)
     {
         // Authorization - user can only generate invoices for their own shipments unless admin
-        if ($shipment->user_id !== Auth::id() && !$this->isAdmin()) {
+        if ($shipment->user_id != Auth::id() && !$this->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 

@@ -14,6 +14,7 @@ class Service extends Model
         'name',
         'description',
         'is_international',
+        'min_weight',
         'max_weight',
         'max_dimensions',
         'transit_time_min',
@@ -24,6 +25,7 @@ class Service extends Model
     protected $casts = [
         'is_international' => 'boolean',
         'is_active' => 'boolean',
+        'min_weight' => 'decimal:3',
         'max_weight' => 'decimal:3',
         'max_dimensions' => 'array',
     ];

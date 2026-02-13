@@ -541,12 +541,29 @@
 }
     </style>
     
-    <!-- Pusher & Echo CDN -->
+    <!-- Pusher & Echo CDN (Optional - remove if not using real-time) -->
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.11.3/dist/echo.iife.js"></script>
 </head>
 <body>
 
+<!-- Inline script to define toggleSidebar immediately -->
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.toggle('show');
+        if (overlay) overlay.classList.toggle('show');
+    }
+    function closeSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.remove('show');
+        if (overlay) overlay.classList.remove('show');
+    }
+    window.toggleSidebar = toggleSidebar;
+    window.closeSidebar = closeSidebar;
+</script>
 
 <!-- Loading Overlay with Plane Animation -->
 <div class="loading-overlay" id="loadingOverlay">
@@ -653,14 +670,15 @@
 
 
 
-    <!-- ADD THIS LIVE CHAT LINK -->
-<a href="{{ route('chat.admin.chat') }}" 
+<!-- In your admin layout sidebar -->
+ <a href="{{ route('admin.chat.index') }}" 
    class="d-flex align-items-center py-2 px-3 rounded text-decoration-none mb-2 
-          {{ request()->routeIs('chat.admin.chat*') ? 'bg-primary text-white' : 'text-dark hover-bg-light' }}">
+          {{ request()->routeIs('admin.chat.*') ? 'bg-primary text-white' : 'text-dark hover-bg-light' }}">
     <i class="ri-chat-3-line me-3"></i>
     <span>Live Chat Support</span>
+
 </a>
-</div>
+</div> 
 
 
             
@@ -743,77 +761,8 @@
             <h5 class="mb-0 d-md-none">@yield('page-title', 'Dashboard')</h5>
             
             <div class="d-flex align-items-center gap-3">
-                <!-- Notification Bell -->
-                <div class="dropdown">
-                    <button class="btn btn-light rounded-circle position-relative p-2 notification-btn" 
-                            type="button" data-bs-toggle="dropdown" 
-                            style="width: 44px; height: 44px;"
-                            id="notificationDropdown"
-                            data-notifications-url="{{ route('admin.notifications.index') }}"
-                            data-mark-read-url="{{ route('admin.notifications.mark-read', ['notification' => ':id']) }}"
-                            data-mark-all-read-url="{{ route('admin.notifications.mark-all-read') }}">
-                        <i class="ri-notification-3-line fs-5"></i>
-                        @if($unreadNotificationsCount > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-pulse" 
-                                  style="font-size: 10px; padding: 2px 6px;"
-                                  id="notificationBadge">
-                                {{ $unreadNotificationsCount }}
-                            </span>
-                        @endif
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end notification-dropdown-menu p-0" 
-                        aria-labelledby="notificationDropdown">
-                        <li class="p-3 border-bottom">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 fw-bold">Notifications</h6>
-                                @if($unreadNotificationsCount > 0)
-                                    <button class="btn btn-sm btn-outline-primary" id="markAllAsRead">
-                                        Mark all as read
-                                    </button>
-                                @endif
-                            </div>
-                        </li>
-                        <li>
-                            <div class="notification-list" style="max-height: 300px; overflow-y: auto;">
-                                @forelse($recentNotifications as $notification)
-                                    <a href="{{ $notification->data['url'] ?? '#' }}" 
-                                       class="dropdown-item notification-item py-3 px-3 border-bottom {{ $notification->unread() ? 'unread' : '' }}"
-                                       data-notification-id="{{ $notification->id }}">
-                                        <div class="d-flex align-items-start">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 me-3">
-                                                <i class="ri-{{ $notification->data['icon'] ?? 'notification-line' }}"></i>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="fw-semibold mb-1">{{ $notification->data['title'] ?? 'Notification' }}</div>
-                                                <small class="text-muted">{{ $notification->data['message'] ?? '' }}</small>
-                                                <div class="text-end mt-1">
-                                                    <small class="text-muted">
-                                                        {{ $notification->created_at->diffForHumans() }}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                            @if($notification->unread())
-                                                <div class="ms-2">
-                                                    <span class="badge bg-primary rounded-pill" style="font-size: 8px;">New</span>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </a>
-                                @empty
-                                    <div class="dropdown-item text-center py-4">
-                                        <i class="ri-notification-off-line fs-1 text-muted mb-2"></i>
-                                        <p class="text-muted mb-0">No notifications</p>
-                                    </div>
-                                @endforelse
-                            </div>
-                        </li>
-                        <li class="border-top">
-                            <a class="dropdown-item text-center py-2" href="{{ route('admin.notifications.index') }}">
-                                <i class="ri-eye-line me-2"></i>View all notifications
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <!-- SIMPLIFIED NOTIFICATION BELL -->
+                @include('partials.notification-bell')
                 
                 <!-- User Dropdown -->
                 <div class="dropdown">
@@ -943,57 +892,21 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JavaScript for Echo -->
+    <!-- Custom JavaScript for Notifications -->
     <script>
-
         document.addEventListener('DOMContentLoaded', function() {
-    // Show loading overlay initially
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    
-    // Hide loading overlay when page is fully loaded
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            loadingOverlay.classList.add('hidden');
-            setTimeout(function() {
-                loadingOverlay.style.display = 'none';
-            }, 700);
-        },900); // Small delay to ensure everything is ready
-    });
-    
-    // Optional: Show loading overlay during AJAX requests
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-        // Show loading for AJAX requests that take more than 300ms
-        let timeout = setTimeout(() => {
-            if (!loadingOverlay.classList.contains('hidden')) return;
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.style.display = 'flex';
-        }, 300);
-        
-        return originalFetch.apply(this, args).then(response => {
-            clearTimeout(timeout);
-            loadingOverlay.classList.add('hidden');
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-            }, 300);
-            return response;
-        }).catch(error => {
-            clearTimeout(timeout);
-            loadingOverlay.classList.add('hidden');
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-            }, 300);
-            throw error;
-        });
-    };
-    
-    // Your existing initialization code...
-    initializeRealtimeNotifications();
-    // ... rest of your code
-});
-        // Initialize Pusher and Echo
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeRealtimeNotifications();
+            // Show loading overlay initially
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            // Hide loading overlay when page is fully loaded
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    loadingOverlay.classList.add('hidden');
+                    setTimeout(function() {
+                        loadingOverlay.style.display = 'none';
+                    }, 700);
+                }, 900); // Small delay to ensure everything is ready
+            });
             
             // Mobile sidebar toggle
             function toggleSidebar() {
@@ -1030,28 +943,48 @@
             window.toggleSidebar = toggleSidebar;
             window.closeSidebar = closeSidebar;
             
-            // Original notification functionality
-            const notificationDropdown = document.getElementById('notificationDropdown');
-            const notificationBadge = document.getElementById('notificationBadge');
-            const markAllAsReadBtn = document.getElementById('markAllAsRead');
+            // Simple notification polling (update badge every 30 seconds)
+            function updateNotificationBadge() {
+                fetch('{{ route("admin.notifications.count") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        const badge = document.getElementById('notificationBadge');
+                        const bell = document.getElementById('notificationBell');
+                        
+                        if (data.count > 0) {
+                            if (!badge) {
+                                // Create badge if it doesn't exist
+                                const newBadge = document.createElement('span');
+                                newBadge.id = 'notificationBadge';
+                                newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                                newBadge.style.cssText = 'font-size: 10px; padding: 2px 6px;';
+                                newBadge.textContent = data.count;
+                                bell.appendChild(newBadge);
+                            } else {
+                                // Update existing badge
+                                badge.textContent = data.count;
+                            }
+                        } else if (badge) {
+                            // Remove badge if count is 0
+                            badge.remove();
+                        }
+                    })
+                    .catch(error => console.error('Error fetching notification count:', error));
+            }
             
-            // Mark notification as read when clicked
-            document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const notificationId = this.dataset.notificationId;
-                    if (notificationId) {
-                        markNotificationAsRead(notificationId);
-                    }
-                });
-            });
+            // Update badge on page load
+            updateNotificationBadge();
             
-            // Mark all notifications as read
-            if (markAllAsReadBtn) {
-                markAllAsReadBtn.addEventListener('click', function(e) {
+            // Poll for new notifications every 30 seconds
+            setInterval(updateNotificationBadge, 30000);
+            
+            // Handle mark all as read button
+            const markAllBtn = document.getElementById('markAllAsReadBtn');
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
                     
-                    fetch('{{ route("admin.notifications.mark-all-read") }}', {
+                    fetch('{{ route("admin.notifications.read.all") }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1061,403 +994,100 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Remove "unread" class from all notifications
+                            // Remove badge
+                            const badge = document.getElementById('notificationBadge');
+                            if (badge) badge.remove();
+                            
+                            // Remove unread styles from notifications
                             document.querySelectorAll('.notification-item.unread').forEach(item => {
                                 item.classList.remove('unread');
-                                const badge = item.querySelector('.badge.bg-primary');
-                                if (badge) badge.remove();
                             });
                             
-                            // Update badge count
-                            if (notificationBadge) {
-                                notificationBadge.remove();
-                            }
-                            
                             // Hide mark all as read button
-                            markAllAsReadBtn.remove();
+                            markAllBtn.remove();
                         }
                     })
                     .catch(error => console.error('Error:', error));
                 });
             }
+        });
+    </script>
+    
+    <!-- Auto-detect and save user timezone -->
+    <script>
+    console.log('⏰ TIMEZONE SCRIPT LOADED');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('⏰ DOMContentLoaded fired');
+        
+        // Get the user's timezone from browser
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log('🌍 Detected browser timezone:', userTimezone);
+        
+        // Check if we need to save it (only if user is authenticated)
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        
+        if (!csrfToken) {
+            console.log('⚠️ Not authenticated, skipping timezone detection');
+            return;
+        }
+        
+        if (!userTimezone) {
+            console.error('❌ Could not detect user timezone');
+            return;
+        }
+        
+        // Try to get current timezone setting
+        fetch('/api/timezone', {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('📍 Current saved timezone:', data.timezone);
+            console.log('🔍 Detected timezone:', userTimezone);
             
-            function markNotificationAsRead(notificationId) {
-                const url = '{{ route("admin.notifications.mark-read", ["notification" => ":id"]) }}'.replace(':id', notificationId);
+            // If no timezone is set or it's the default, update it
+            if (!data.timezone || data.timezone === 'Europe/Berlin' || data.timezone === 'UTC') {
+                console.log('💾 Saving detected timezone...');
                 
-                fetch(url, {
+                // Save the detected timezone
+                fetch('/api/timezone/detect', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ timezone: userTimezone })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Remove "unread" class
-                        const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                        if (notificationItem) {
-                            notificationItem.classList.remove('unread');
-                            const badge = notificationItem.querySelector('.badge.bg-primary');
-                            if (badge) badge.remove();
-                            
-                            // Update badge count
-                            if (notificationBadge) {
-                                const currentCount = parseInt(notificationBadge.textContent);
-                                if (currentCount > 1) {
-                                    notificationBadge.textContent = currentCount - 1;
-                                } else {
-                                    notificationBadge.remove();
-                                    if (markAllAsReadBtn) markAllAsReadBtn.remove();
-                                }
-                            }
-                        }
+                        console.log('✅ Timezone saved successfully:', data.timezone);
+                        console.log('🕐 Current time in your timezone:', data.current_time);
+                        // Reload page to apply new timezone
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        console.error('❌ Error saving timezone:', data.message);
                     }
                 })
-                .catch(error => console.error('Error:', error));
-            }
-            
-            // Poll for new notifications every 30 seconds
-            setInterval(function() {
-                fetch('{{ route("admin.notifications.count") }}')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.unread_count > 0) {
-                            updateNotificationBadge(data.unread_count);
-                        }
-                    })
-                    .catch(error => console.error('Error fetching notification count:', error));
-            }, 30000);
-            
-            function updateNotificationBadge(count) {
-                if (!notificationBadge && count > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-pulse';
-                    badge.style.cssText = 'font-size: 10px; padding: 2px 6px;';
-                    badge.id = 'notificationBadge';
-                    badge.textContent = count;
-                    notificationDropdown.appendChild(badge);
-                } else if (notificationBadge) {
-                    if (count > 0) {
-                        notificationBadge.textContent = count;
-                    } else {
-                        notificationBadge.remove();
-                    }
-                }
-            }
-        });
-        
-        function initializeRealtimeNotifications() {
-            // Get user ID from meta tag
-            const userId = document.querySelector('meta[name="user-id"]').content;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            
-            if (!userId) {
-                console.warn('User ID not found. Real-time notifications disabled.');
-                return;
-            }
-            
-            // Initialize Pusher
-            Pusher.logToConsole = {{ app()->environment('local') ? 'true' : 'false' }};
-            
-            // Initialize Echo
-            window.Echo = new Echo({
-                broadcaster: 'pusher',
-                key: '{{ env("PUSHER_APP_KEY", "your-pusher-key") }}',
-                cluster: '{{ env("PUSHER_APP_CLUSTER", "mt1") }}',
-                forceTLS: true,
-                authEndpoint: '/broadcasting/auth',
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }
-            });
-            
-            // Listen for private notifications
-            window.Echo.private('App.Models.User.' + userId)
-                .notification((notification) => {
-                    console.log('New real-time notification:', notification);
-                    
-                    // Update notification badge
-                    updateNotificationBadgeRealtime();
-                    
-                    // Show browser notification
-                    showBrowserNotification(notification);
-                    
-                    // Play notification sound
-                    playNotificationSound();
-                    
-                    // Add to dropdown
-                    addNotificationToDropdown(notification);
+                .catch(error => {
+                    console.error('❌ Error saving timezone:', error);
                 });
-            
-            // Listen for global admin notifications
-            window.Echo.private('admin.global')
-                .listen('.admin.notification', (data) => {
-                    console.log('Global admin notification:', data);
-                    // Handle global admin notifications
-                });
-        }
-        
-        function updateNotificationBadgeRealtime() {
-            const badge = document.getElementById('notificationBadge');
-            if (badge) {
-                const currentCount = parseInt(badge.textContent) || 0;
-                badge.textContent = currentCount + 1;
-                badge.classList.add('notification-pulse');
+            } else if (data.timezone === userTimezone) {
+                console.log('✅ Timezone already correct:', data.timezone);
             } else {
-                // Create badge if it doesn't exist
-                const notificationBtn = document.querySelector('.notification-btn');
-                if (notificationBtn) {
-                    const newBadge = document.createElement('span');
-                    newBadge.id = 'notificationBadge';
-                    newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-pulse';
-                    newBadge.style.cssText = 'font-size: 10px; padding: 2px 6px;';
-                    newBadge.textContent = '1';
-                    notificationBtn.appendChild(newBadge);
-                    
-                    // Add mark all as read button if not present
-                    const dropdownMenu = document.querySelector('.notification-dropdown-menu');
-                    if (dropdownMenu && !document.getElementById('markAllAsRead')) {
-                        const header = dropdownMenu.querySelector('.p-3.border-bottom');
-                        if (header) {
-                            const markAllBtn = document.createElement('button');
-                            markAllBtn.id = 'markAllAsRead';
-                            markAllBtn.className = 'btn btn-sm btn-outline-primary';
-                            markAllBtn.textContent = 'Mark all as read';
-                            markAllBtn.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                markAllNotificationsAsRead();
-                            });
-                            header.querySelector('.d-flex').appendChild(markAllBtn);
-                        }
-                    }
-                }
+                console.log('⚠️ Timezone mismatch - saved:', data.timezone, 'detected:', userTimezone);
             }
-        }
-        
-        function showBrowserNotification(notification) {
-            // Check if browser supports notifications
-            if (!("Notification" in window)) {
-                console.log("This browser does not support desktop notification");
-                return;
-            }
-            
-            // Check if permission is already granted
-            if (Notification.permission === "granted") {
-                createNotification(notification);
-            }
-            // Otherwise, ask for permission
-            else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        createNotification(notification);
-                    }
-                });
-            }
-        }
-        
-        function createNotification(notification) {
-            const title = notification.data?.title || 'New Notification';
-            const body = notification.data?.message || 'You have a new notification';
-            const icon = '/favicon.ico'; // Your favicon path
-            
-            const notificationObj = new Notification(title, {
-                body: body,
-                icon: icon,
-                tag: 'notification-' + notification.id
-            });
-            
-            // Close notification after 5 seconds
-            setTimeout(() => {
-                notificationObj.close();
-            }, 5000);
-            
-            // Click handler for notification
-            notificationObj.onclick = function() {
-                window.focus();
-                this.close();
-                
-                // Navigate to notification URL if available
-                if (notification.data?.url && notification.data.url !== '#') {
-                    window.location.href = notification.data.url;
-                }
-            };
-        }
-        
-        function playNotificationSound() {
-            // Create audio element
-            const audio = new Audio('/notification.mp3'); // Add this sound file to public folder
-            
-            // Try to play sound
-            audio.play().catch(error => {
-                console.log('Audio play failed:', error);
-                // Fallback to beep sound
-                playBeepSound();
-            });
-        }
-        
-        function playBeepSound() {
-            // Create a simple beep sound using Web Audio API
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.1;
-                
-                oscillator.start();
-                setTimeout(() => {
-                    oscillator.stop();
-                }, 100);
-            } catch (e) {
-                console.log('Web Audio API not supported');
-            }
-        }
-        
-        function addNotificationToDropdown(notification) {
-            const dropdownList = document.querySelector('.notification-dropdown-menu .notification-list');
-            if (!dropdownList) return;
-            
-            // Create notification element
-            const notificationElement = createNotificationElement(notification);
-            
-            // Add to top of list
-            dropdownList.insertBefore(notificationElement, dropdownList.firstChild);
-            
-            // Limit to 10 notifications
-            const notifications = dropdownList.querySelectorAll('.notification-item');
-            if (notifications.length > 10) {
-                notifications[notifications.length - 1].remove();
-            }
-        }
-        
-        function createNotificationElement(notification) {
-            const data = notification.data || {};
-            const icon = data.icon || 'ri-notification-line';
-            const bgColor = getPriorityColor(data.priority || 'normal');
-            const timeAgo = 'Just now';
-            
-            const element = document.createElement('a');
-            element.href = data.url || '#';
-            element.className = 'dropdown-item notification-item py-3 px-3 border-bottom unread';
-            element.setAttribute('data-notification-id', notification.id);
-            element.onclick = function(e) {
-                e.preventDefault();
-                markNotificationAsReadRealtime(notification.id, data.url);
-            };
-            
-            element.innerHTML = `
-                <div class="d-flex align-items-start">
-                    <div class="rounded-circle bg-${bgColor}-subtle text-${bgColor} p-2 me-3">
-                        <i class="${icon}"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold mb-1">${data.title || 'Notification'}</div>
-                        <small class="text-muted">${data.message || ''}</small>
-                        <div class="text-end mt-1">
-                            <small class="text-muted">${timeAgo}</small>
-                        </div>
-                    </div>
-                    <div class="ms-2">
-                        <span class="badge bg-${bgColor} rounded-pill" style="font-size: 8px;">New</span>
-                    </div>
-                </div>
-            `;
-            
-            return element;
-        }
-        
-        function getPriorityColor(priority) {
-            switch(priority) {
-                case 'low': return 'info';
-                case 'normal': return 'primary';
-                case 'high': return 'warning';
-                case 'urgent': return 'danger';
-                default: return 'primary';
-            }
-        }
-        
-        function markNotificationAsReadRealtime(notificationId, redirectUrl = null) {
-            fetch(`/admin/notifications/${notificationId}/mark-read`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Remove "unread" class
-                    const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                    if (notificationItem) {
-                        notificationItem.classList.remove('unread');
-                        const badge = notificationItem.querySelector('.badge.bg-primary, .badge.bg-warning, .badge.bg-danger, .badge.bg-info');
-                        if (badge) badge.remove();
-                    }
-                    
-                    // Update badge count
-                    const notificationBadge = document.getElementById('notificationBadge');
-                    if (notificationBadge) {
-                        const currentCount = parseInt(notificationBadge.textContent);
-                        if (currentCount > 1) {
-                            notificationBadge.textContent = currentCount - 1;
-                        } else {
-                            notificationBadge.remove();
-                        }
-                    }
-                    
-                    // Redirect if URL provided
-                    if (redirectUrl && redirectUrl !== '#') {
-                        window.location.href = redirectUrl;
-                    }
-                }
-            })
-            .catch(error => console.error('Error marking notification as read:', error));
-        }
-        
-        function markAllNotificationsAsRead() {
-            fetch('/admin/notifications/mark-all-read', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Remove all "unread" classes and badges
-                    document.querySelectorAll('.notification-item.unread').forEach(item => {
-                        item.classList.remove('unread');
-                        const badge = item.querySelector('.badge');
-                        if (badge) badge.remove();
-                    });
-                    
-                    // Remove notification badge
-                    const notificationBadge = document.getElementById('notificationBadge');
-                    if (notificationBadge) {
-                        notificationBadge.remove();
-                    }
-                    
-                    // Remove mark all as read button
-                    const markAllBtn = document.getElementById('markAllAsRead');
-                    if (markAllBtn) {
-                        markAllBtn.remove();
-                    }
-                }
-            })
-            .catch(error => console.error('Error marking all notifications as read:', error));
-        }
+        })
+        .catch(error => {
+            console.error('❌ Error checking timezone:', error);
+        });
+    });
     </script>
     
     @stack('scripts')

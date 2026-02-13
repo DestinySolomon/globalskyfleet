@@ -8,7 +8,7 @@ class ChatConversation extends Model
 {
     protected $fillable = [
         'user_id', 'user_name', 'user_email', 'user_ip',
-        'status', 'assigned_to', 'last_message_at', 'unread_count'
+        'name', 'email', 'status', 'assigned_to', 'last_message_at', 'unread_count'
     ];
 
     protected $casts = [
@@ -27,12 +27,12 @@ class ChatConversation extends Model
 
     public function messages()
     {
-        return $this->hasMany(ChatMessage::class)->latest();
+        return $this->hasMany(ChatMessage::class, 'conversation_id')->latest();
     }
 
     public function latestMessage()
     {
-        return $this->hasOne(ChatMessage::class)->latest();
+        return $this->hasOne(ChatMessage::class, 'conversation_id')->latest();
     }
 
     public function scopeActive($query)
@@ -61,4 +61,6 @@ class ChatConversation extends Model
         $this->last_message_at = now();
         $this->save();
     }
+
+    
 }

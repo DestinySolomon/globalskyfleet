@@ -75,7 +75,7 @@
                     <div class="mb-3">
                         <label class="form-label text-muted">Last Login</label>
                         <div class="fw-semibold">
-                            {{ Auth::user()->last_login_at ? Auth::user()->last_login_at->format('M d, Y h:i A') : 'Never' }}
+                            {{ Auth::user()->last_login_at ? formatUserTime(Auth::user()->last_login_at, 'M d, Y h:i A') : 'Never' }}
                         </div>
                     </div>
                     
@@ -146,6 +146,43 @@
                                 <input type="tel" class="form-control @error('phone') is-invalid @enderror" 
                                        id="phone" name="phone" value="{{ old('phone', Auth::user()->phone) }}">
                                 @error('phone')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="timezone" class="form-label">Timezone *</label>
+                                <select class="form-select @error('timezone') is-invalid @enderror" 
+                                        id="timezone" name="timezone" required>
+                                    <option value="">Select Timezone</option>
+                                    @php
+                                        $timezones = [
+                                            'UTC' => 'UTC (Coordinated Universal Time)',
+                                            'Africa/Lagos' => 'Lagos, Nigeria (WAT)',
+                                            'Africa/Cairo' => 'Cairo, Egypt (EET)',
+                                            'Europe/London' => 'London, UK (GMT/BST)',
+                                            'Europe/Paris' => 'Paris, France (CET/CEST)',
+                                            'Europe/Berlin' => 'Berlin, Germany (CET/CEST)',
+                                            'America/New_York' => 'Eastern Time (US & Canada)',
+                                            'America/Chicago' => 'Central Time (US & Canada)',
+                                            'America/Denver' => 'Mountain Time (US & Canada)',
+                                            'America/Los_Angeles' => 'Pacific Time (US & Canada)',
+                                            'Asia/Dubai' => 'Dubai, UAE',
+                                            'Asia/Kolkata' => 'India (IST)',
+                                            'Asia/Singapore' => 'Singapore',
+                                            'Asia/Tokyo' => 'Tokyo, Japan',
+                                            'Australia/Sydney' => 'Sydney, Australia',
+                                        ];
+                                        ksort($timezones);
+                                    @endphp
+                                    @foreach($timezones as $value => $label)
+                                    <option value="{{ $value }}" {{ old('timezone', Auth::user()->timezone) == $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                                <small class="form-text text-muted">All timestamps will display in your selected timezone</small>
+                                @error('timezone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

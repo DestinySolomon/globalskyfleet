@@ -148,7 +148,7 @@
                     </tr>
                     <tr>
                         <th>Created:</th>
-                        <td>{{ $document->shipment->created_at->format('M d, Y') }}</td>
+                        <td>{{ formatUserTime($document->shipment->created_at, 'M d, Y') }}</td>
                     </tr>
                 </table>
             </div>

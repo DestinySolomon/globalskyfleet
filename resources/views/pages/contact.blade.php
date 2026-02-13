@@ -41,7 +41,7 @@
                                        id="name" 
                                        name="name"
                                        value="{{ old('name') }}"
-                                       placeholder="John Doe" 
+                                       placeholder="Janet May" 
                                        required>
                             </div>
                             
@@ -52,7 +52,7 @@
                                        id="email" 
                                        name="email"
                                        value="{{ old('email') }}"
-                                       placeholder="john@example.com" 
+                                       placeholder="janet@example.com" 
                                        required>
                             </div>
                             
@@ -111,8 +111,8 @@
                                     </div>
                                     <div>
                                         <h4 class="h5 fw-semibold text-white mb-1">Email</h4>
-                                        <a href="mailto:support@globalskyfleet.com" class="text-white opacity-80 hover-opacity-100 text-decoration-none">
-                                            support@globalskyfleet.com
+                                        <a href="mailto:globalskyfleet@gmail.com" class="text-white opacity-80 hover-opacity-100 text-decoration-none">
+                                            globalskyfleet@gmail.com
                                         </a>
                                     </div>
                                 </div>
@@ -123,12 +123,14 @@
                                     </div>
                                     <div>
                                         <h4 class="h5 fw-semibold text-white mb-1">Phone</h4>
-                                        <a href="tel:+1-800-SKYFLEET" class="text-white opacity-80 hover-opacity-100 text-decoration-none d-block">
-                                            +1-800-SKYFLEET
-                                        </a>
+                                       
                                         <a href="tel:+1-800-759-3533" class="text-white opacity-80 hover-opacity-100 text-decoration-none">
-                                            +1-800-759-3533
-                                        </a>
+                                          +447735 607621
+                                        </a> <br>
+                                        <a href="tel:+1-800-759-3533" class="text-white opacity-80 hover-opacity-100 text-decoration-none">
+                                         +44 7563 903650
+                                        </a>    
+
                                     </div>
                                 </div>
                                 
@@ -139,10 +141,9 @@
                                     <div>
                                         <h4 class="h5 fw-semibold text-white mb-2">Office Locations</h4>
                                         <div class="text-white opacity-80">
-                                            <p class="mb-1 small">New York: 350 Fifth Avenue, NY 10118</p>
-                                            <p class="mb-1 small">London: 1 Canada Square, E14 5AB</p>
-                                            <p class="mb-1 small">Dubai: Sheikh Zayed Road, Dubai</p>
-                                            <p class="mb-0 small">Singapore: 1 Marina Boulevard, 018989</p>
+                                          
+                                            <p class="mb-1 small">11 Canal Street,Paisley, Renfrewshire, <br>Scotland,PA1 1YL,UK</p>
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -158,7 +159,7 @@
                                     </div>
                                 </div>
                                 
-                                <a href="https://wa.me/18007593533" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp w-100 mt-4 py-3 rounded-2 fw-semibold">
+                                <a href="https://wa.me/+447735607621" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp w-100 mt-4 py-3 rounded-2 fw-semibold">
                                     <i class="ri-whatsapp-line me-2 fs-5"></i>Chat on WhatsApp
                                 </a>
                             </div>

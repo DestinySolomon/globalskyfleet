@@ -311,7 +311,7 @@
                                             @endif
                                         </div>
                                         <small class="text-muted d-block">
-                                            Created: {{ $shipment->created_at->format('M d, Y') }}
+                                            Created: {{ formatUserTime($shipment->created_at, 'M d, Y') }}
                                         </small>
                                     </div>
                                 </div>

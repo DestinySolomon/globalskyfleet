@@ -41,7 +41,7 @@
                                                class="form-control form-control-custom" 
                                                id="pickupCountry" 
                                                name="pickup_country"
-                                               value="{{ old('pickup_country', 'United States') }}"
+                                               value="{{ old('pickup_country') }}"
                                                placeholder="Start typing country name..."
                                                autocomplete="off"
                                                required>
@@ -60,7 +60,7 @@
                                                class="form-control form-control-custom" 
                                                id="deliveryCountry" 
                                                name="delivery_country"
-                                               value="{{ old('delivery_country', 'Germany') }}"
+                                               value="{{ old('delivery_country') }}"
                                                placeholder="Start typing country name..."
                                                autocomplete="off"
                                                required>
@@ -77,7 +77,7 @@
                                            class="form-control form-control-custom" 
                                            id="weight" 
                                            name="weight"
-                                           value="{{ old('weight', '25') }}"
+                                           value="{{ old('weight') }}"
                                            placeholder="e.g., 25"
                                            step="0.1"
                                            min="0.1"
@@ -245,12 +245,12 @@
             <!-- Create Shipment Button (for logged in users) -->
             @auth
             <div class="mb-4">
-                <a href="{{ route('shipments.create') }}?weight={{ session('quote_result.weight', '25') }}&pickup={{ session('quote_result.pickup', 'United States') }}&delivery={{ session('quote_result.delivery', 'Germany') }}&type={{ session('quote_result.type', 'Parcel') }}"
+                <a href="{{ route('shipments.create') }}"
                    class="btn btn-success w-100 rounded-2 py-3 fw-semibold">
-                    <i class="ri-ship-line me-2"></i>Create Shipment with This Quote
+                    <i class="ri-ship-line me-2"></i>Create Shipment
                 </a>
                 <p class="text-muted small mt-2 text-center">
-                    Your quote details will be pre-filled in the shipment form
+                    Start creating a new shipment independently
                 </p>
             </div>
             @else
@@ -268,7 +268,7 @@
                 
                 <div class="row g-2">
                     <div class="col-6">
-                        <a href="{{ route('login') }}?redirect={{ urlencode(route('shipments.create') . '?weight=' . session('quote_result.weight', '25') . '&pickup=' . session('quote_result.pickup', 'United States') . '&delivery=' . session('quote_result.delivery', 'Germany') . '&type=' . session('quote_result.type', 'Parcel')) }}" class="btn btn-outline-primary w-100">
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary w-100">
                             <i class="ri-login-box-line me-1"></i>Login
                         </a>
                     </div>

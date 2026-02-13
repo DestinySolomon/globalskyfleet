@@ -25,6 +25,7 @@ class Document extends Model
     protected $casts = [
         'file_size' => 'integer',
           'shipment_id' => 'string',
+        'user_id' => 'integer',
     ];
 
     // Relationship: Document belongs to a User

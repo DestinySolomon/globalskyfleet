@@ -20,14 +20,19 @@
                 <div class="col-md-8">
                     <h4 class="mb-1">Shipment: <strong>{{ $shipment->tracking_number }}</strong></h4>
                     <p class="text-muted mb-0">
-                        Created: {{ $shipment->created_at->format('M d, Y H:i') }} | 
-                        Estimated Delivery: {{ $shipment->estimated_delivery ? $shipment->estimated_delivery->format('M d, Y') : 'Not set' }}
+                        Created: {{ formatUserTime($shipment->created_at, 'M d, Y H:i') }} | 
+                        Estimated Delivery: {{ formatUserTime($shipment->estimated_delivery, 'M d, Y') ?? 'Not set' }}
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end">
                     <span class="badge bg-{{ $shipment->status === 'delivered' ? 'success' : ($shipment->status === 'pending' ? 'warning' : 'info') }} fs-6">
                         {{ ucfirst(str_replace('_', ' ', $shipment->status)) }}
                     </span>
+                    @if($shipment->has_coordinates)
+                        <span class="badge bg-success ms-2">
+                            <i class="ri-map-pin-line me-1"></i>Has Map
+                        </span>
+                    @endif
                 </div>
             </div>
         </div>
@@ -36,6 +41,26 @@
     <div class="row">
         <!-- Left Column: Shipment Details -->
         <div class="col-lg-8">
+            <!-- Map Preview Card -->
+            @if($shipment->has_coordinates)
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">
+                        <i class="ri-map-2-line me-2"></i>Location Map Preview
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="adminMapPreview" style="height: 300px; width: 100%;"></div>
+                </div>
+                <div class="card-footer bg-white border-top py-2">
+                    <small class="text-muted">
+                        <i class="ri-information-line me-1"></i>
+                        This map will appear on the public tracking page
+                    </small>
+                </div>
+            </div>
+            @endif
+
             <!-- Status Timeline -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom">
@@ -61,9 +86,16 @@
                                 <div class="timeline-content">
                                     <div class="d-flex justify-content-between">
                                         <h6 class="mb-1">{{ ucfirst(str_replace('_', ' ', $update->status)) }}</h6>
-                                        <small class="text-muted">{{ $update->scan_datetime->format('M d, Y H:i') }}</small>
+                                        <small class="text-muted">{{ formatUserTime($update->scan_datetime, 'M d, Y H:i') }}</small>
                                     </div>
-                                    <p class="mb-1">{{ $update->location }}</p>
+                                    <p class="mb-1">
+                                        <i class="ri-map-pin-line me-1"></i>{{ $update->location }}
+                                        @if($update->has_coordinates)
+                                            <br><small class="text-muted">
+                                                {{ round($update->latitude, 4) }}, {{ round($update->longitude, 4) }}
+                                            </small>
+                                        @endif
+                                    </p>
                                     @if($update->description)
                                         <p class="text-muted small mb-0">{{ $update->description }}</p>
                                     @endif
@@ -239,6 +271,115 @@
                 </div>
             </div>
 
+            <!-- Map Coordinates Update -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">
+                        <i class="ri-map-pin-line me-2"></i>Location Coordinates
+                        @if($shipment->has_coordinates)
+                            <span class="badge bg-success ms-2">Has Coordinates</span>
+                        @else
+                            <span class="badge bg-warning ms-2">No Coordinates</span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Current Coordinates Display -->
+                    @if($shipment->has_coordinates)
+                    <div class="alert alert-info border-0 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-2">
+                                <i class="ri-map-pin-2-line"></i>
+                            </div>
+                            <div>
+                                <p class="mb-1"><strong>Current Coordinates:</strong></p>
+                                <p class="mb-1">
+                                    Latitude: <code>{{ $shipment->latitude }}</code><br>
+                                    Longitude: <code>{{ $shipment->longitude }}</code>
+                                </p>
+                                <small class="text-muted">
+                                    Last updated: {{ formatUserTime($shipment->location_updated_at, 'M d, Y H:i') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <!-- Update Coordinates Form -->
+                    <form action="{{ route('admin.shipments.update-coordinates', $shipment->id) }}" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Latitude</label>
+                            <input type="number" step="0.000001" name="latitude" 
+                                   class="form-control" 
+                                   value="{{ old('latitude', $shipment->latitude) }}"
+                                   placeholder="40.7128" required>
+                            <small class="form-text text-muted">Between -90 and 90</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Longitude</label>
+                            <input type="number" step="0.000001" name="longitude" 
+                                   class="form-control" 
+                                   value="{{ old('longitude', $shipment->longitude) }}"
+                                   placeholder="-74.0060" required>
+                            <small class="form-text text-muted">Between -180 and 180</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Location Name (Optional)</label>
+                            <input type="text" name="location_name" 
+                                   class="form-control" 
+                                   value="{{ old('location_name', $shipment->current_location) }}"
+                                   placeholder="e.g., New York, USA">
+                            <small class="form-text text-muted">This will update current_location field</small>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="update_status_history" id="update_history" value="1" checked>
+                            <label class="form-check-label" for="update_history">
+                                Add to status history timeline
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="ri-save-line me-2"></i>Update Coordinates
+                        </button>
+                    </form>
+                    
+                    <!-- Quick Help -->
+                    <div class="mt-3 border-top pt-3">
+                        <h6 class="small fw-semibold mb-2">
+                            <i class="ri-information-line me-1"></i>How to get coordinates:
+                        </h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Go to <a href="https://maps.google.com" target="_blank">Google Maps</a></li>
+                            <li>Right-click on location → "What's here?"</li>
+                            <li>Copy latitude,longitude from the info box</li>
+                        </ul>
+                        
+                        <!-- Quick Coordinates for Testing -->
+                        <div class="mt-3">
+                            <h6 class="small fw-semibold mb-2">Quick Test Coordinates:</h6>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="setCoordinates(6.5244, 3.3792, 'Lagos, Nigeria')">
+                                    Lagos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="setCoordinates(40.7128, -74.0060, 'New York, USA')">
+                                    New York
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="setCoordinates(51.5074, -0.1278, 'London, UK')">
+                                    London
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Customer Information -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom">
@@ -316,3 +457,67 @@
 }
 </style>
 @endsection
+
+@push('styles')
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+<style>
+#adminMapPreview {
+    min-height: 300px;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Quick coordinates helper function
+    window.setCoordinates = function(lat, lng, locationName) {
+        document.querySelector('input[name="latitude"]').value = lat;
+        document.querySelector('input[name="longitude"]').value = lng;
+        if (locationName && document.querySelector('input[name="location_name"]')) {
+            document.querySelector('input[name="location_name"]').value = locationName;
+        }
+    };
+
+    // Map preview for admin
+    @if($shipment->has_coordinates)
+    try {
+        mapboxgl.accessToken = '{{ config("mapbox.access_token") }}';
+        
+        const map = new mapboxgl.Map({
+            container: 'adminMapPreview',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [{{ $shipment->longitude }}, {{ $shipment->latitude }}],
+            zoom: 10
+        });
+        
+        map.addControl(new mapboxgl.NavigationControl());
+        
+        // Add marker
+        new mapboxgl.Marker({ color: '#0a2463' })
+            .setLngLat([{{ $shipment->longitude }}, {{ $shipment->latitude }}])
+            .setPopup(new mapboxgl.Popup({ offset: 25 })
+                .setHTML(`
+                    <div class="p-2">
+                        <h6 class="mb-1">Shipment Location</h6>
+                        <p class="mb-1 small">{{ $shipment->current_location ?? 'No location set' }}</p>
+                        <p class="mb-1 small">Tracking: {{ $shipment->tracking_number }}</p>
+                        <p class="mb-0 small text-muted">{{ $shipment->latitude }}, {{ $shipment->longitude }}</p>
+                    </div>
+                `))
+            .addTo(map);
+            
+    } catch (error) {
+        console.error('Map preview error:', error);
+        document.getElementById('adminMapPreview').innerHTML = `
+            <div class="alert alert-warning m-3">
+                <i class="ri-error-warning-line me-2"></i>
+                Map preview unavailable
+            </div>
+        `;
+    }
+    @endif
+});
+</script>
+@endpush

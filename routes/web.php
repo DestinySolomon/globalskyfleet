@@ -17,6 +17,9 @@ use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\AdminHelpController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TimezoneController;
+
 
 
 // Home Page
@@ -83,6 +86,10 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name
 Route::middleware(['auth'])->group(function () {
     // Dashboard - accessible only to logged-in users
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Timezone detection and management
+    Route::post('/api/timezone/detect', [TimezoneController::class, 'detectAndSave'])->name('timezone.detect');
+    Route::get('/api/timezone', [TimezoneController::class, 'get'])->name('timezone.get');
 
        // Address Management
     Route::resource('addresses', AddressController::class);
@@ -212,7 +219,7 @@ Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
 
 
 // ==================== NOTIFICATION ROUTES ====================
-Route::prefix('notifications')->name('notifications.')->group(function () {
+Route::prefix('notifications')->name('user.notifications.')->group(function () {
     // Get notifications (with pagination)
     Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('index');
     
@@ -246,6 +253,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/shipments/{id}', [AdminController::class, 'showShipment'])->name('shipments.show');
     Route::post('/shipments/{id}/status', [AdminController::class, 'updateShipmentStatus'])->name('shipments.update-status');
     
+//update shipment location
+Route::post('/shipments/{id}/update-coordinates', [AdminController::class, 'updateShipmentCoordinates'])->name('shipments.update-coordinates');
+
     // Users
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
@@ -313,6 +323,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         // Get recent notifications for dropdown (AJAX)
         Route::get('/recent', [AdminNotificationController::class, 'getRecentNotifications'])->name('get-recent');
         
+        // Show single notification
+        Route::get('/{id}', [AdminNotificationController::class, 'show'])->name('show');
+        
         // Mark single notification as read
         Route::post('/{notification}/mark-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-read');
         
@@ -320,7 +333,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/{notification}/read-and-redirect', [AdminNotificationController::class, 'readAndRedirect'])->name('read-and-redirect');
         
         // Mark all notifications as read
-        Route::post('/mark-all-read', [AdminNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::post('/mark-all-read', [AdminNotificationController::class, 'markAllAsRead'])->name('read.all');
         
         // Delete notification
         Route::delete('/{notification}', [AdminNotificationController::class, 'destroy'])->name('destroy');
@@ -344,21 +357,39 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     });
 });
 
-
-
-// Broadcasting auth route (required for private channels)
-Broadcast::routes(['middleware' => ['web', 'auth']]);
-
-// Chat Routes
-Route::prefix('chat')->name('chat.')->group(function () {
-    Route::post('/conversation', [ChatController::class, 'getConversation'])->name('conversation');
+// ==================== LIVE CHAT ROUTES ====================
+Route::prefix('chat')->name('chat.')->middleware(['auth'])->group(function () {
+    // Get or create conversation for current user
+    Route::post('/conversation', [ChatController::class, 'getOrCreateConversation'])->name('conversation');
+    
+    // Send a message
     Route::post('/message/send', [ChatController::class, 'sendMessage'])->name('message.send');
     
-    // Admin routes
-    Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/conversations', [ChatController::class, 'getAdminConversations'])->name('conversations');
-        Route::get('/chat', function () {
-            return view('admin.chat-simple');
-        })->name('chat');
-    });
+    // Get messages for a conversation
+    Route::get('/messages/{conversationId}', [ChatController::class, 'getMessages'])->name('messages');
 });
+
+// Admin Chat Routes
+Route::prefix('admin/chat')->name('admin.chat.')->middleware(['auth', 'admin'])->group(function () {
+    // View all conversations
+    Route::get('/', [ChatController::class, 'adminIndex'])->name('index');
+    
+    // API: Get all conversations (for AJAX)
+    Route::get('/conversations', [ChatController::class, 'adminGetUpdates'])->name('conversations');
+    
+    // API: Get specific conversation as JSON (for AJAX)
+    Route::get('/conversation/{conversationId}/json', [ChatController::class, 'adminGetConversation'])->name('conversation.json');
+    
+    // View specific conversation
+    Route::get('/conversation/{conversationId}', [ChatController::class, 'adminViewConversation'])->name('conversation');
+    
+    // Reply to a conversation
+    Route::post('/reply', [ChatController::class, 'adminReply'])->name('reply');
+    
+    // Get new messages (for polling)
+    Route::get('/conversations/updates', [ChatController::class, 'adminGetUpdates'])->name('updates');
+});
+
+
+
+

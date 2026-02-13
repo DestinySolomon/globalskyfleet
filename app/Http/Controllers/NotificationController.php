@@ -8,110 +8,134 @@ use Illuminate\Notifications\DatabaseNotification;
 
 class NotificationController extends Controller
 {
-    /**
-     * Get user notifications
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
-        $perPage = $request->get('per_page', 15);
         
-        $notifications = $user->notifications()
-            ->when($request->category, function($query, $category) {
-                return $query->where('category', $category);
-            })
-            ->when($request->read, function($query, $read) {
-                if ($read === 'read') {
-                    return $query->whereNotNull('read_at');
-                } elseif ($read === 'unread') {
-                    return $query->whereNull('read_at');
-                }
-                return $query;
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        // Redirect admins/super admins to admin notifications (only for HTML requests)
+        if ($user->isAdminOrSuperAdmin() && !$request->expectsJson()) {
+            return redirect()->route('admin.notifications.index');
+        }
+        
+        // Regular users see their notifications
+        $perPage = $request->query('per_page', 20);
+        $notifications = $user->notifications()->latest()->paginate($perPage);
+        
+        // Return JSON if requested
+        if ($request->expectsJson()) {
+            $formattedNotifications = $notifications->map(function ($notification) {
+                $data = $notification->data;
+                return [
+                    'id' => $notification->id,
+                    'title' => $data['title'] ?? 'Notification',
+                    'message' => $data['message'] ?? '',
+                    'icon' => $data['icon'] ?? 'ri-notification-line',
+                    'color' => $this->getColorClass($data['priority'] ?? 'normal'),
+                    'read' => $notification->read_at !== null,
+                    'category' => $data['category'] ?? $notification->category,
+                    'tracking_number' => $data['tracking_number'] ?? null,
+                    'url' => $data['url'] ?? null,
+                    'created_at' => $notification->created_at->toIso8601String(),
+                    'data' => $data,
+                ];
+            })->toArray();
             
-        // Transform notifications
-        $notifications->getCollection()->transform(function ($notification) {
-            return [
-                'id' => $notification->id,
-                'title' => $notification->data['title'] ?? 'Notification',
-                'message' => $notification->data['message'] ?? '',
-                'category' => $notification->category,
-                'priority' => $notification->priority,
-                'read' => $notification->read_at !== null,
-                'time' => $notification->created_at->diffForHumans(),
-                'url' => $notification->data['url'] ?? null,
-                'icon' => $notification->data['icon'] ?? 'ri-notification-line',
-                'color' => $notification->data['color'] ?? 'primary',
-                'data' => $notification->data,
-                'created_at' => $notification->created_at->toISOString(),
-            ];
-        });
+            return response()->json([
+                'notifications' => [
+                    'data' => $formattedNotifications,
+                    'links' => [],
+                    'pagination' => [
+                        'current_page' => $notifications->currentPage(),
+                        'per_page' => $notifications->perPage(),
+                        'total' => $notifications->total(),
+                        'last_page' => $notifications->lastPage(),
+                    ]
+                ]
+            ]);
+        }
         
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $user->unreadNotifications()->count(),
-        ]);
+        return view('notifications.index', compact('notifications'));
     }
     
-    /**
-     * Mark notification as read
-     */
-    public function markAsRead(Request $request, $id)
+    private function getColorClass($priority)
+    {
+        return match($priority) {
+            'low' => 'bg-info bg-opacity-10 text-info',
+            'normal' => 'bg-primary bg-opacity-10 text-primary',
+            'high' => 'bg-warning bg-opacity-10 text-warning',
+            'urgent' => 'bg-danger bg-opacity-10 text-danger',
+            default => 'bg-secondary bg-opacity-10 text-secondary',
+        };
+    }
+    
+    public function markAsRead($id)
     {
         $user = Auth::user();
         $notification = $user->notifications()->where('id', $id)->first();
         
-        if (!$notification) {
-            return response()->json(['error' => 'Notification not found'], 404);
+        if ($notification) {
+            $notification->markAsRead();
+            
+            // Redirect to notification URL if available
+            if (isset($notification->data['url']) && $notification->data['url'] !== '#') {
+                $url = $notification->data['url'];
+                
+                // If user is admin, check if we should redirect to admin URL
+                if ($user->isAdminOrSuperAdmin()) {
+                    // Check if there's an admin-specific URL in the notification data
+                    if (isset($notification->data['admin_url']) && !empty($notification->data['admin_url'])) {
+                        $url = $notification->data['admin_url'];
+                    } else if (strpos($url, '/shipments/') !== false) {
+                        // Convert regular shipment URL to admin URL
+                        $url = str_replace('/shipments/', '/admin/shipments/', $url);
+                    } else if (strpos($url, '/users/') !== false) {
+                        // Convert regular user URL to admin URL
+                        $url = str_replace('/users/', '/admin/users/', $url);
+                    }
+                }
+                
+                return redirect($url);
+            }
         }
         
-        $notification->markAsRead();
+        // If no URL or admin, redirect appropriately
+        if ($user->isAdminOrSuperAdmin()) {
+            return redirect()->route('admin.dashboard')->with('success', 'Notification marked as read');
+        }
         
-        return response()->json([
-            'success' => true,
-            'unread_count' => $user->unreadNotifications()->count(),
-        ]);
+        return redirect()->back()->with('success', 'Notification marked as read');
     }
     
-    /**
-     * Mark all notifications as read
-     */
-    public function markAllAsRead(Request $request)
+    public function markAllAsRead()
     {
         $user = Auth::user();
-        $user->unreadNotifications()->update(['read_at' => now()]);
+        $user->unreadNotifications->markAsRead();
         
-        return response()->json([
-            'success' => true,
-            'unread_count' => 0,
-        ]);
+        // Redirect admins back to admin notifications page
+        if ($user->isAdminOrSuperAdmin()) {
+            return redirect()->route('admin.notifications.index')->with('success', 'All notifications marked as read');
+        }
+        
+        return redirect()->back()->with('success', 'All notifications marked as read');
     }
     
-    /**
-     * Clear all notifications
-     */
-    public function clearAll(Request $request)
+    public function unreadCount()
+    {
+        $count = Auth::user()->unreadNotifications()->count();
+        
+        return response()->json(['count' => $count]);
+    }
+    
+    public function clearAll()
     {
         $user = Auth::user();
         $user->notifications()->delete();
         
-        return response()->json([
-            'success' => true,
-            'unread_count' => 0,
-        ]);
-    }
-    
-    /**
-     * Get unread notifications count
-     */
-    public function unreadCount()
-    {
-        $user = Auth::user();
+        // Redirect admins back to admin notifications page
+        if ($user->isAdminOrSuperAdmin()) {
+            return redirect()->route('admin.notifications.index')->with('success', 'All notifications cleared');
+        }
         
-        return response()->json([
-            'count' => $user->unreadNotifications()->count(),
-        ]);
+        return redirect()->back()->with('success', 'All notifications cleared');
     }
 }

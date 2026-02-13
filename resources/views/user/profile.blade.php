@@ -31,7 +31,7 @@
                     <div class="text-center mb-4">
                         <div class="position-relative d-inline-block mb-3">
                             <div class="profile-picture-wrapper">
-                                <img src="{{ $user->profile_picture_url }}" 
+                                <img src="{{ $user->profile_picture_url }}?v={{ time() }}" 
                                      alt="{{ $user->name }}" 
                                      class="profile-picture rounded-circle"
                                      id="profilePicturePreview">
@@ -165,7 +165,7 @@
                                     <label class="form-label">Profile Picture</label>
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
-                                            <img src="{{ $user->profile_picture_url }}" 
+                                            <img src="{{ $user->profile_picture_url }}?v={{ time() }}" 
                                                  alt="Current profile picture" 
                                                  class="rounded-circle"
                                                  style="width: 80px; height: 80px; object-fit: cover;"
@@ -304,7 +304,7 @@
                                         </span>
                                     </td>
                                     <td class="pe-4">
-                                        {{ $shipment->created_at->format('M d, Y') }}
+                                        {{ formatUserTime($shipment->created_at, 'M d, Y') }}
                                     </td>
                                 </tr>
                                 @endforeach

@@ -119,20 +119,20 @@
                         
                         <dt class="col-sm-5 text-muted">Created:</dt>
                         <dd class="col-sm-7">
-                            {{ $payment->created_at->format('M d, Y - h:i A') }}
+                            {{ formatUserTime($payment->created_at, 'M d, Y - h:i A') }}
                         </dd>
                         
                         @if($payment->paid_at)
                             <dt class="col-sm-5 text-muted">Paid At:</dt>
                             <dd class="col-sm-7">
-                                {{ $payment->paid_at->format('M d, Y - h:i A') }}
+                                {{ formatUserTime($payment->paid_at, 'M d, Y - h:i A') }}
                             </dd>
                         @endif
                         
                         @if($payment->confirmed_at)
                             <dt class="col-sm-5 text-muted">Confirmed At:</dt>
                             <dd class="col-sm-7">
-                                {{ $payment->confirmed_at->format('M d, Y - h:i A') }}
+                                {{ formatUserTime($payment->confirmed_at, 'M d, Y - h:i A') }}
                             </dd>
                         @endif
                     </dl>

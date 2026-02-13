@@ -3,7 +3,7 @@
 @section('title', 'Track Shipment - ' . $shipment->tracking_number)
 
 @section('content')
-<div class="container py-5">
+<div class="container py-5 mt-5">
     <div class="row justify-content-center">
         <div class="col-md-10">
             <!-- Tracking Header -->
@@ -51,7 +51,7 @@
                                 <div class="timeline-content">
                                     <div class="d-flex justify-content-between">
                                         <h6 class="mb-1">{{ ucfirst(str_replace('_', ' ', $update->status)) }}</h6>
-                                        <small class="text-muted">{{ $update->scan_datetime->format('M d, Y H:i') }}</small>
+                                        <small class="text-muted">{{ formatUserTime($update->scan_datetime, 'M d, Y H:i') }}</small>
                                     </div>
                                     <p class="mb-1">{{ $update->location }}</p>
                                     @if($update->description)
@@ -70,9 +70,9 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-white">
-                            <h6 class="mb-0">Sender Information</h6>
+                            <h6 class="mb-0 text-muted">Sender Information</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body text-muted">
                             @if($shipment->senderAddress)
                                 <p class="mb-1"><strong>{{ $shipment->senderAddress->contact_name }}</strong></p>
                                 <p class="mb-1">{{ $shipment->senderAddress->address_line1 }}</p>
@@ -87,9 +87,9 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-white">
-                            <h6 class="mb-0">Recipient Information</h6>
+                            <h6 class="mb-0 text-muted">Recipient Information</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body text-muted">
                             @if($shipment->recipientAddress)
                                 <p class="mb-1"><strong>{{ $shipment->recipientAddress->contact_name }}</strong></p>
                                 <p class="mb-1">{{ $shipment->recipientAddress->address_line1 }}</p>

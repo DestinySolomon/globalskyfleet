@@ -28,8 +28,10 @@ return new class extends Migration
             $table->foreignId('conversation_id')->constrained('chat_conversations')->onDelete('cascade');
             $table->foreignId('sender_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('sender_type')->default('user'); // user, admin, system
+            $table->string('sender_name')->nullable(); // Name of the sender
             $table->text('message');
             $table->string('attachment')->nullable();
+            $table->boolean('is_admin')->default(false); // Whether sender is admin
             $table->boolean('is_read')->default(false);
             $table->timestamp('read_at')->nullable();
             $table->timestamps();

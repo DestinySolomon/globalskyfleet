@@ -116,30 +116,34 @@
                             <div class="col-md-6">
                                 <label class="form-label">Timezone *</label>
                                 <select name="timezone" class="form-select @error('timezone') is-invalid @enderror" required>
-                                    <option value="">Select Timezone</option>
+                                    <option value="">Select Your Timezone</option>
                                     @php
                                         $timezones = [
-                                            'UTC' => 'UTC',
+                                            'UTC' => 'UTC (Coordinated Universal Time)',
+                                            'Africa/Lagos' => 'Lagos, Nigeria (WAT)',
+                                            'Africa/Cairo' => 'Cairo, Egypt (EET)',
+                                            'Europe/London' => 'London, UK (GMT/BST)',
+                                            'Europe/Paris' => 'Paris, France (CET/CEST)',
+                                            'Europe/Berlin' => 'Berlin, Germany (CET/CEST)',
                                             'America/New_York' => 'Eastern Time (US & Canada)',
                                             'America/Chicago' => 'Central Time (US & Canada)',
                                             'America/Denver' => 'Mountain Time (US & Canada)',
                                             'America/Los_Angeles' => 'Pacific Time (US & Canada)',
-                                            'Europe/London' => 'London',
-                                            'Europe/Paris' => 'Paris',
-                                            'Europe/Berlin' => 'Berlin',
-                                            'Asia/Dubai' => 'Dubai',
-                                            'Asia/Kolkata' => 'India',
+                                            'Asia/Dubai' => 'Dubai, UAE',
+                                            'Asia/Kolkata' => 'India (IST)',
                                             'Asia/Singapore' => 'Singapore',
-                                            'Asia/Tokyo' => 'Tokyo',
-                                            'Australia/Sydney' => 'Sydney',
+                                            'Asia/Tokyo' => 'Tokyo, Japan',
+                                            'Australia/Sydney' => 'Sydney, Australia',
                                         ];
+                                        ksort($timezones);
                                     @endphp
                                     @foreach($timezones as $value => $label)
-                                    <option value="{{ $value }}" {{ old('timezone', $user->display_preferences['timezone'] ?? 'UTC') == $value ? 'selected' : '' }}>
+                                    <option value="{{ $value }}" {{ old('timezone', $user->timezone) == $value ? 'selected' : '' }}>
                                         {{ $label }}
                                     </option>
                                     @endforeach
                                 </select>
+                                <small class="form-text text-muted">All timestamps will display in your selected timezone</small>
                                 @error('timezone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

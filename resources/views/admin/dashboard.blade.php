@@ -218,9 +218,9 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <small>{{ $shipment->created_at->format('M d') }}</small>
+                                        <small>{{ formatUserTime($shipment->created_at, 'M d') }}</small>
                                         <br>
-                                        <small class="text-muted">{{ $shipment->created_at->format('H:i') }}</small>
+                                        <small class="text-muted">{{ formatUserTime($shipment->created_at, 'H:i') }}</small>
                                     </td>
                                 </tr>
                                 @empty

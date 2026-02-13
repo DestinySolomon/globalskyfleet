@@ -384,7 +384,7 @@
                             </li>
                             <li class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Created Time</span>
-                                <span class="fw-semibold">{{ $address->created_at->format('h:i A') }}</span>
+                                <span class="fw-semibold">{{ formatUserTime($address->created_at, 'h:i A') }}</span></span>
                             </li>
                             <li class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Last Updated</span>
@@ -392,7 +392,7 @@
                             </li>
                             <li class="d-flex justify-content-between">
                                 <span class="text-muted">Last Updated Time</span>
-                                <span class="fw-semibold">{{ $address->updated_at->format('h:i A') }}</span>
+                                <span class="fw-semibold">{{ formatUserTime($address->updated_at, 'h:i A') }}</span></span>
                             </li>
                         </ul>
                     </div>

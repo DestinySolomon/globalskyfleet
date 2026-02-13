@@ -143,8 +143,9 @@
                                     
                                     <div class="col-12">
                                         <div class="form-check form-switch">
+                                            <input type="hidden" name="maintenance_mode" value="0">
                                             <input class="form-check-input" type="checkbox" name="maintenance_mode" 
-                                                   id="maintenance_mode" {{ setting('maintenance_mode', false) ? 'checked' : '' }}>
+                                                   id="maintenance_mode" value="1" {{ setting('maintenance_mode', false) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="maintenance_mode">
                                                 Enable Maintenance Mode
                                             </label>

@@ -75,6 +75,8 @@ class UserProfileController extends Controller
             
             // Handle profile picture upload
             if ($request->hasFile('profile_picture')) {
+                \Log::info('Profile picture upload started');
+                
                 // Delete old profile picture if exists
                 if ($user->profile_picture) {
                     Storage::disk('public')->delete('profile-pictures/' . $user->profile_picture);
@@ -82,16 +84,22 @@ class UserProfileController extends Controller
                 
                 // Generate unique filename
                 $filename = Str::uuid() . '.' . $request->profile_picture->extension();
+                \Log::info('Generated filename: ' . $filename);
                 
                 // Store the file
                 $path = $request->profile_picture->storeAs('profile-pictures', $filename, 'public');
+                \Log::info('File stored at path: ' . $path);
                 
                 $user->profile_picture = $filename;
+                \Log::info('Profile picture field set to: ' . $filename);
             }
             
             $user->save();
             
             DB::commit();
+            
+            // Refresh authenticated user to reflect changes
+            Auth::setUser($user->fresh());
             
             return redirect()->route('user.profile')
                 ->with('success', 'Profile updated successfully!');
@@ -162,6 +170,9 @@ class UserProfileController extends Controller
                 $user->email = $request->email;
                 $user->email_verified_at = null; // Require re-verification
             }
+            
+            // Update timezone directly
+            $user->timezone = $request->timezone;
             
             // Update settings
             $settings = $user->settings ?? [];
@@ -422,7 +433,7 @@ class UserProfileController extends Controller
     }
 
     /**
-     * Deactivate account.
+     * Deactivate account with optional data deletion.
      */
     public function deactivateAccount(Request $request)
     {
@@ -431,6 +442,7 @@ class UserProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'password' => ['required', 'current_password'],
             'confirmation' => ['required', 'string', 'in:DEACTIVATE MY ACCOUNT'],
+            'delete_data' => ['nullable', 'boolean'],
         ]);
         
         if ($validator->fails()) {
@@ -443,26 +455,80 @@ class UserProfileController extends Controller
         try {
             DB::beginTransaction();
             
-            // Mark user as deactivated (you can add a 'deactivated_at' column)
-            // For now, we'll just delete the user (soft delete if you have it)
-            // $user->deactivated_at = now();
-            // $user->save();
+            $deleteData = $request->input('delete_data', false);
+            
+            if ($deleteData) {
+                // User wants to delete all their data
+                // Delete in the correct order to avoid foreign key constraints
+                
+                // 1. Delete shipments (cascades to related tables)
+                DB::table('shipments')->where('user_id', $user->id)->delete();
+                
+                // 2. Delete documents
+                DB::table('documents')->where('user_id', $user->id)->delete();
+                
+                // 3. Delete invoices
+                if (Schema::hasTable('invoices')) {
+                    DB::table('invoices')->where('user_id', $user->id)->delete();
+                }
+                
+                // 4. Delete crypto payments
+                if (Schema::hasTable('crypto_payments')) {
+                    DB::table('crypto_payments')->where('user_id', $user->id)->delete();
+                }
+                
+                // 5. Delete chat data
+                if (Schema::hasTable('chat_conversations')) {
+                    $conversationIds = DB::table('chat_conversations')
+                        ->where('user_id', $user->id)
+                        ->pluck('id');
+                    
+                    if ($conversationIds->isNotEmpty()) {
+                        DB::table('chat_messages')->whereIn('conversation_id', $conversationIds)->delete();
+                        DB::table('chat_conversations')->where('user_id', $user->id)->delete();
+                    }
+                }
+                
+                // 6. Delete notifications
+                DB::table('notifications')
+                    ->where('notifiable_id', $user->id)
+                    ->where('notifiable_type', 'App\\Models\\User')
+                    ->delete();
+                
+                // 7. Delete addresses
+                DB::table('addresses')->where('user_id', $user->id)->delete();
+                
+                // 8. Delete profile picture if exists
+                if ($user->profile_picture) {
+                    Storage::disk('public')->delete('profile-pictures/' . $user->profile_picture);
+                }
+            }
+            
+            // Mark account as deactivated
+            $user->deactivate('User requested account deactivation');
+            
+            DB::commit();
             
             // Logout the user
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
             
-            DB::commit();
-            
             return redirect()->route('home')
-                ->with('success', 'Your account has been deactivated successfully.');
+                ->with('success', $deleteData 
+                    ? 'Your account and all associated data have been deleted successfully.' 
+                    : 'Your account has been deactivated successfully.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
             
+            \Log::error('Error deactivating account: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->back()
-                ->with('error', 'Failed to deactivate account. Please try again.');
+                ->with('error', 'Failed to deactivate account. Please try again or contact support.');
         }
     }
 

@@ -36,11 +36,23 @@ class LoginController extends Controller
 
         // Attempt to authenticate the user
         if (Auth::attempt($credentials, $request->filled('remember'))) {
+            // Get the authenticated user
+            $user = Auth::user();
+            
+            // Check if account is deactivated
+            if (!$user->is_active) {
+                Auth::logout();
+                
+                throw ValidationException::withMessages([
+                    'email' => 'Your account has been deactivated. Please contact support to reactivate your account.',
+                ]);
+            }
+            
             // Regenerate session for security
             $request->session()->regenerate();
             
-            // Get the authenticated user
-            $user = Auth::user();
+            // Record login activity
+            $user->recordLogin($request->ip());
             
             // Check for redirect parameter from quote flow
             $redirect = $request->query('redirect');

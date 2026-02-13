@@ -45,8 +45,8 @@
     <!-- Custom CSS -->
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
 
-        <!-- Pusher JS CDN -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<!-- In the <head> section, add Mapbox CSS -->
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
     
     <!-- Additional Styles -->
     @stack('styles')
@@ -83,19 +83,9 @@
     
     <!-- Additional Scripts -->
     @stack('scripts')
-
-
-{{-- In the body before closing --}}
-<script>
-    // Initialize Pusher globally
-    window.PUSHER_APP_KEY = '{{ env("PUSHER_APP_KEY") }}';
-    window.PUSHER_APP_CLUSTER = '{{ env("PUSHER_APP_CLUSTER") }}';
-
-
-        AOS.init({
-            duration: 1200,
-        })
-</script>  
+    
+ <!-- Before </body> tag, add Mapbox JS -->
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
 
 <script src="https://unpkg.com/aos@2.3.0/dist/aos.js"></script>
 </body>

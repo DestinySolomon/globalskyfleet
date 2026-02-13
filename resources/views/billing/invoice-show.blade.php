@@ -291,7 +291,7 @@
                             <div class="timeline-marker"></div>
                             <div class="timeline-content">
                                 <h6 class="mb-1">Invoice Created</h6>
-                                <p class="text-muted small mb-0">{{ $invoice->created_at->format('M d, Y - h:i A') }}</p>
+                                <p class="text-muted small mb-0">{{ formatUserTime($invoice->created_at, 'M d, Y - h:i A') }}</p>
                             </div>
                         </div>
                         
@@ -300,7 +300,7 @@
                                 <div class="timeline-marker"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Payment Submitted</h6>
-                                    <p class="text-muted small mb-0">{{ $invoice->payment->created_at->format('M d, Y - h:i A') }}</p>
+                                    <p class="text-muted small mb-0">{{ formatUserTime($invoice->payment->created_at, 'M d, Y - h:i A') }}</p>
                                 </div>
                             </div>
                             
@@ -308,7 +308,7 @@
                                 <div class="timeline-marker"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Payment Verified</h6>
-                                    <p class="text-muted small mb-0">{{ $invoice->payment->verified_at?->format('M d, Y - h:i A') ?? 'Pending' }}</p>
+                                    <p class="text-muted small mb-0">{{ formatUserTime($invoice->payment->verified_at, 'M d, Y - h:i A') ?? 'Pending' }}</p>
                                 </div>
                             </div>
                             
@@ -316,7 +316,7 @@
                                 <div class="timeline-marker"></div>
                                 <div class="timeline-content">
                                     <h6 class="mb-1">Invoice Paid</h6>
-                                    <p class="text-muted small mb-0">{{ $invoice->updated_at->format('M d, Y - h:i A') }}</p>
+                                    <p class="text-muted small mb-0">{{ formatUserTime($invoice->updated_at, 'M d, Y - h:i A') }}</p>
                                 </div>
                             </div>
                         @else

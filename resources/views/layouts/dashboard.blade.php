@@ -1289,6 +1289,84 @@
 <script src="{{ asset('js/notifications.js') }}"></script>
 <!-- Page Loader Script -->
 <script src="{{ asset('js/page-loader.js') }}"></script>
+
+<!-- Auto-detect and save user timezone -->
+<script>
+console.log('⏰ TIMEZONE SCRIPT LOADED');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('⏰ DOMContentLoaded fired');
+    
+    // Get the user's timezone from browser
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log('🌍 Detected browser timezone:', userTimezone);
+    
+    // Check if we need to save it (only if user is authenticated)
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    if (!csrfToken) {
+        console.log('⚠️ Not authenticated, skipping timezone detection');
+        return;
+    }
+    
+    if (!userTimezone) {
+        console.error('❌ Could not detect user timezone');
+        return;
+    }
+    
+    // Try to get current timezone setting
+    fetch('/api/timezone', {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('📍 Current saved timezone:', data.timezone);
+        console.log('🔍 Detected timezone:', userTimezone);
+        
+        // If no timezone is set or it's the default, update it
+        if (!data.timezone || data.timezone === 'Europe/Berlin' || data.timezone === 'UTC') {
+            console.log('💾 Saving detected timezone...');
+            
+            // Save the detected timezone
+            fetch('/api/timezone/detect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ timezone: userTimezone })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Timezone saved successfully:', data.timezone);
+                    console.log('🕐 Current time in your timezone:', data.current_time);
+                    // Reload page to apply new timezone
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    console.error('❌ Error saving timezone:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error saving timezone:', error);
+            });
+        } else if (data.timezone === userTimezone) {
+            console.log('✅ Timezone already correct:', data.timezone);
+        } else {
+            console.log('⚠️ Timezone mismatch - saved:', data.timezone, 'detected:', userTimezone);
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error checking timezone:', error);
+    });
+});
+</script>
+
   @include('partials.floating-home')
 </body>
 </html>

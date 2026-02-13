@@ -6,6 +6,28 @@
 
 @section('content')
 <div class="billing-dashboard">
+    <!-- Pay Now Button -->
+    @if($stats['balance_due'] > 0)
+    <div class="alert alert-warning">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong><i class="ri-alert-line"></i> You have outstanding balance: ${{ number_format($stats['balance_due'], 2) }}</strong>
+                <p class="mb-0 small">Pay now to avoid service interruptions</p>
+            </div>
+            <div>
+                @php
+                    $oldestPendingInvoice = Auth::user()->invoices()->where('status', 'pending')->oldest()->first();
+                @endphp
+                @if($oldestPendingInvoice)
+                    <a href="{{ route('billing.pay', $oldestPendingInvoice) }}" class="btn btn-warning">
+                        <i class="ri-money-dollar-circle-line"></i> Pay Now
+                    </a>
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Stats Overview -->
     <div class="stats-grid mb-4">
         <div class="stat-card">

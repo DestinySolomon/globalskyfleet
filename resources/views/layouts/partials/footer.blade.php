@@ -71,9 +71,9 @@
                 <p class="text-white opacity-60 small mb-2">
                     © {{ date('Y') }} GlobalSkyFleet. All rights reserved.
                 </p>
-                <p class="text-white opacity-60 small mb-0">
+                {{-- <p class="text-white opacity-60 small mb-0">
                     Site by <a href="https://github.com/DestinySolomon" target="_blank" rel="noopener noreferrer" class="text-white opacity-60 hover-opacity-100 text-decoration-none">Dee</a>
-                </p>
+                </p> --}}
             </div>
             <div class="d-flex gap-4">
                 <a href="{{ route('terms') }}" class="text-white opacity-60 hover-opacity-100 text-decoration-none small">Terms of Service</a>

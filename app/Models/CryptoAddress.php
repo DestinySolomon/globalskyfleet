@@ -283,8 +283,8 @@ class CryptoAddress extends Model
      */
     public function canBeDeleted(): bool
     {
-        return !$this->hasBeenUsed();
-       
+        // Allow deletion regardless of usage
+        return true;
     }
 
     /**

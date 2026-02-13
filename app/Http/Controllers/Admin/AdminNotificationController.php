@@ -15,10 +15,15 @@ class AdminNotificationController extends Controller
     {
         $user = Auth::user();
         
-        $query = $user->notifications()->with('notifiable');
+        // Check if user is admin/super admin
+        if (!$user->isAdminOrSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $query = $user->notifications();
         
         // Filter by read status
-        if ($request->has('status')) {
+        if ($request->has('status') && $request->status !== 'all') {
             if ($request->status === 'read') {
                 $query->whereNotNull('read_at');
             } elseif ($request->status === 'unread') {
@@ -27,12 +32,12 @@ class AdminNotificationController extends Controller
         }
         
         // Filter by category
-        if ($request->filled('category')) {
+        if ($request->filled('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
         
         // Filter by priority
-        if ($request->filled('priority')) {
+        if ($request->filled('priority') && $request->priority !== 'all') {
             $query->where('priority', $request->priority);
         }
         
@@ -59,6 +64,7 @@ class AdminNotificationController extends Controller
             'document' => 'Document',
             'user' => 'User',
             'system' => 'System',
+            'admin' => 'Admin',
         ];
         
         $priorities = [
@@ -90,7 +96,16 @@ class AdminNotificationController extends Controller
      */
     public function unreadCount()
     {
-        $count = Auth::user()->unreadNotifications()->count();
+        $user = Auth::user();
+        
+        // Return 0 if not admin/super admin
+        if (!$user->isAdminOrSuperAdmin()) {
+            return response()->json([
+                'unread_count' => 0,
+            ]);
+        }
+        
+        $count = $user->unreadNotifications()->count();
         
         return response()->json([
             'unread_count' => $count,
@@ -102,13 +117,22 @@ class AdminNotificationController extends Controller
      */
     public function markAsRead(Request $request, $id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Access denied'], 403);
+            }
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $notification = $user->notifications()->findOrFail($id);
         $notification->markAsRead();
         
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'unread_count' => Auth::user()->unreadNotifications()->count(),
+                'unread_count' => $user->unreadNotifications()->count(),
             ]);
         }
         
@@ -120,7 +144,16 @@ class AdminNotificationController extends Controller
      */
     public function markAllAsRead(Request $request)
     {
-        Auth::user()->unreadNotifications()->update(['read_at' => now()]);
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Access denied'], 403);
+            }
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $user->unreadNotifications()->update(['read_at' => now()]);
         
         if ($request->expectsJson()) {
             return response()->json([
@@ -137,7 +170,13 @@ class AdminNotificationController extends Controller
      */
     public function destroy($id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $notification = $user->notifications()->findOrFail($id);
         $notification->delete();
         
         return redirect()->back()->with('success', 'Notification deleted successfully.');
@@ -148,16 +187,22 @@ class AdminNotificationController extends Controller
      */
     public function clearAll(Request $request)
     {
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
         $status = $request->get('status', 'all');
         
         if ($status === 'read') {
-            Auth::user()->notifications()->whereNotNull('read_at')->delete();
+            $user->notifications()->whereNotNull('read_at')->delete();
             $message = 'All read notifications cleared.';
         } elseif ($status === 'unread') {
-            Auth::user()->notifications()->whereNull('read_at')->delete();
+            $user->notifications()->whereNull('read_at')->delete();
             $message = 'All unread notifications cleared.';
         } else {
-            Auth::user()->notifications()->delete();
+            $user->notifications()->delete();
             $message = 'All notifications cleared.';
         }
         
@@ -169,14 +214,43 @@ class AdminNotificationController extends Controller
      */
     public function readAndRedirect($id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $notification = $user->notifications()->findOrFail($id);
         
         // Mark as read
         $notification->markAsRead();
         
         // Get redirect URL from notification data
         $data = $notification->data;
-        $url = $data['url'] ?? route('admin.dashboard');
+        
+        // Check if the URL should be admin-specific
+        if (isset($data['url']) && $data['url'] !== '#') {
+            $url = $data['url'];
+            
+            // Ensure admin stays in admin area
+            if (strpos($url, '/admin/') === false && $user->isAdminOrSuperAdmin()) {
+                // If it's a regular URL, check if we should redirect to admin equivalent
+                if (isset($data['admin_url']) && !empty($data['admin_url'])) {
+                    $url = $data['admin_url'];
+                } else {
+                    // Try to convert to admin URL if possible
+                    if (strpos($url, '/shipments/') !== false) {
+                        $url = str_replace('/shipments/', '/admin/shipments/', $url);
+                    } elseif (strpos($url, '/users/') !== false) {
+                        $url = str_replace('/users/', '/admin/users/', $url);
+                    } elseif (strpos($url, '/documents/') !== false) {
+                        $url = str_replace('/documents/', '/admin/documents/', $url);
+                    }
+                }
+            }
+        } else {
+            $url = route('admin.dashboard');
+        }
         
         return redirect($url);
     }
@@ -186,13 +260,38 @@ class AdminNotificationController extends Controller
      */
     public function getRecentNotifications()
     {
-        $notifications = Auth::user()
-            ->notifications()
+        $user = Auth::user();
+        
+        // Return empty if not admin/super admin
+        if (!$user->isAdminOrSuperAdmin()) {
+            return response()->json([
+                'notifications' => [],
+                'unread_count' => 0,
+            ]);
+        }
+        
+        $notifications = $user->notifications()
             ->latest()
-            ->limit(5)
+            ->limit(10)
             ->get()
-            ->map(function ($notification) {
+            ->map(function ($notification) use ($user) {
                 $data = $notification->data;
+                
+                // Process URL for admin
+                $url = $data['url'] ?? '#';
+                if ($url !== '#' && strpos($url, '/admin/') === false && $user->isAdminOrSuperAdmin()) {
+                    if (isset($data['admin_url']) && !empty($data['admin_url'])) {
+                        $url = $data['admin_url'];
+                    } else {
+                        // Try to convert to admin URL
+                        if (strpos($url, '/shipments/') !== false) {
+                            $url = str_replace('/shipments/', '/admin/shipments/', $url);
+                        } elseif (strpos($url, '/users/') !== false) {
+                            $url = str_replace('/users/', '/admin/users/', $url);
+                        }
+                    }
+                }
+                
                 return [
                     'id' => $notification->id,
                     'title' => $data['title'] ?? 'Notification',
@@ -200,13 +299,57 @@ class AdminNotificationController extends Controller
                     'icon' => $data['icon'] ?? 'ri-notification-line',
                     'time' => $notification->created_at->diffForHumans(),
                     'unread' => $notification->unread(),
-                    'url' => $data['url'] ?? '#',
+                    'url' => $url,
+                    'priority' => $notification->priority ?? 'normal',
                 ];
             });
         
         return response()->json([
             'notifications' => $notifications,
-            'unread_count' => Auth::user()->unreadNotifications()->count(),
+            'unread_count' => $user->unreadNotifications()->count(),
+        ]);
+    }
+
+    /**
+     * Show a specific notification.
+     */
+    public function show($id)
+    {
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied.');
+        }
+        
+        $notification = $user->notifications()->findOrFail($id);
+        
+        // Mark as read when viewing
+        if ($notification->unread()) {
+            $notification->markAsRead();
+        }
+        
+        return view('admin.notifications.show', compact('notification'));
+    }
+
+    /**
+     * Get notifications for dropdown (legacy method).
+     */
+    public function getNotifications(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user->isAdminOrSuperAdmin()) {
+            return response()->json(['notifications' => [], 'unread_count' => 0]);
+        }
+        
+        $notifications = $user->notifications()
+            ->latest()
+            ->limit(10)
+            ->get();
+        
+        return response()->json([
+            'notifications' => $notifications,
+            'unread_count' => $user->unreadNotifications()->count(),
         ]);
     }
 }

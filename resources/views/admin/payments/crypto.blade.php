@@ -236,7 +236,7 @@
                                             </div>
                                             @if($payment->paid_at)
                                                 <small class="text-muted">
-                                                    {{ $payment->paid_at->format('M d, H:i') }}
+                                                    {{ formatUserTime($payment->paid_at, 'M d, H:i') }}
                                                 </small>
                                             @endif
                                         @else
@@ -252,8 +252,8 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div>{{ $payment->created_at->format('M d, Y') }}</div>
-                                        <small class="text-muted">{{ $payment->created_at->format('H:i') }}</small>
+                                        <div>{{ formatUserTime($payment->created_at, 'M d, Y') }}</div>
+                                        <small class="text-muted">{{ formatUserTime($payment->created_at, 'H:i') }}</small>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">

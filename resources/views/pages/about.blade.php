@@ -116,7 +116,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">New York, USA</h4>
-                                <p class="text-muted small mb-0">350 Fifth Avenue, NY 10118</p>
+                                {{-- <p class="text-muted small mb-0">350 Fifth Avenue, NY 10118</p> --}}
                             </div>
                         </div>
                     </div>
@@ -127,7 +127,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">London, UK</h4>
-                                <p class="text-muted small mb-0">1 Canada Square, E14 5AB</p>
+                                {{-- <p class="text-muted small mb-0">1 Canada Square, E14 5AB</p> --}}
                             </div>
                         </div>
                     </div>
@@ -138,7 +138,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">Dubai, UAE</h4>
-                                <p class="text-muted small mb-0">Sheikh Zayed Road, Dubai</p>
+                                {{-- <p class="text-muted small mb-0">Sheikh Zayed Road, Dubai</p> --}}
                             </div>
                         </div>
                     </div>
@@ -149,7 +149,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">Singapore, Singapore</h4>
-                                <p class="text-muted small mb-0">1 Marina Boulevard, 018989</p>
+                                {{-- <p class="text-muted small mb-0">1 Marina Boulevard, 018989</p> --}}
                             </div>
                         </div>
                     </div>
@@ -160,7 +160,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">Hong Kong, China</h4>
-                                <p class="text-muted small mb-0">1 Connaught Place, Central</p>
+                                {{-- <p class="text-muted small mb-0">1 Connaught Place, Central</p> --}}
                             </div>
                         </div>
                     </div>
@@ -171,7 +171,7 @@
                             <i class="ri-map-pin-line text-skyblue fs-4 me-3 mt-1"></i>
                             <div>
                                 <h4 class="h5 fw-bold text-navy mb-1">Sydney, Australia</h4>
-                                <p class="text-muted small mb-0">1 Macquarie Place, NSW 2000</p>
+                                {{-- <p class="text-muted small mb-0">1 Macquarie Place, NSW 2000</p> --}}
                             </div>
                         </div>
                     </div>

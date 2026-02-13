@@ -65,7 +65,7 @@
                         <div class="list-group-item border-0 px-0 py-2">
                             <div class="d-flex justify-content-between">
                                 <span class="text-muted">Joined:</span>
-                                <span class="fw-semibold">{{ $user->created_at->format('M d, Y H:i') }}</span>
+                                <span class="fw-semibold">{{ formatUserTime($user->created_at, 'M d, Y H:i') }}</span>
                             </div>
                         </div>
                         <div class="list-group-item border-0 px-0 py-2">
@@ -195,7 +195,7 @@
                                             <span class="text-muted">—</span>
                                         @endif
                                     </td>
-                                    <td>{{ $shipment->created_at->format('M d') }}</td>
+                                    <td>{{ formatUserTime($shipment->created_at, 'M d') }}</td></td>
                                 </tr>
                                 @endforeach
                             </tbody>

@@ -7,10 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Notifications\Messages\BroadcastMessage;
 
-class DocumentNotification extends Notification implements ShouldQueue, ShouldBroadcast
+class DocumentNotification extends BaseNotification // Changed from implements ShouldQueue, ShouldBroadcast
 {
     use Queueable;
 
@@ -19,9 +17,6 @@ class DocumentNotification extends Notification implements ShouldQueue, ShouldBr
     public $message;
     public $priority;
 
-    /**
-     * Create a new notification instance.
-     */
     public function __construct(Document $document, $title, $message, $priority = 'normal')
     {
         $this->document = $document;
@@ -30,31 +25,11 @@ class DocumentNotification extends Notification implements ShouldQueue, ShouldBr
         $this->priority = $priority;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
-        $channels = ['database'];
-        
-        // Add email if enabled
-        if ($notifiable->notification_preferences['email_notifications'] ?? true) {
-            $channels[] = 'mail';
-        }
-        
-        // Add broadcast for real-time
-        if ($notifiable->notification_preferences['push_notifications'] ?? true) {
-            $channels[] = 'broadcast';
-        }
-        
-        return $channels;
+        return $this->getChannels($notifiable, ['database', 'mail']);
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
@@ -65,25 +40,6 @@ class DocumentNotification extends Notification implements ShouldQueue, ShouldBr
             ->line('Status: ' . ucfirst($this->document->status));
     }
 
-    /**
-     * Get the broadcastable representation of the notification.
-     */
-    public function toBroadcast(object $notifiable): BroadcastMessage
-    {
-        return new BroadcastMessage([
-            'id' => $this->id,
-            'type' => get_class($this),
-            'data' => $this->toArray($notifiable),
-            'read_at' => null,
-            'created_at' => now()->toDateTimeString(),
-        ]);
-    }
-
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
         return [
@@ -98,13 +54,5 @@ class DocumentNotification extends Notification implements ShouldQueue, ShouldBr
             'status' => $this->document->status,
             'user_name' => $this->document->user->name ?? 'Unknown',
         ];
-    }
-
-    /**
-     * Get the database representation of the notification.
-     */
-    public function toDatabase(object $notifiable): array
-    {
-        return $this->toArray($notifiable);
     }
 }

@@ -87,7 +87,7 @@
                                 </div>
                                 <div>
                                     <strong class="d-block">{{ $shipment->tracking_number }}</strong>
-                                    <small class="text-muted">{{ $shipment->created_at->format('M d, Y') }}</small>
+                                    <small class="text-muted">{{ formatUserTime($shipment->created_at, 'M d, Y') }}</small>
                                 </div>
                             </div>
                         </td>
@@ -124,7 +124,7 @@
                         <td>
                             @if($shipment->estimated_delivery)
                                 <div>
-                                    <strong class="d-block">{{ $shipment->estimated_delivery->format('M d, Y') }}</strong>
+                                    <strong class="d-block">{{ formatUserTime($shipment->estimated_delivery, 'M d, Y') }}</strong>
                                     <small class="text-muted">{{ $shipment->estimated_delivery->diffForHumans() }}</small>
                                 </div>
                             @else
@@ -230,7 +230,7 @@
                         </div>
                         
                         <div class="col-md-4">
-                            <a href="{{ route('tracking') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                            <a href="{{ route('dashboard.tracking') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                 <div class="card-body text-center py-4">
                                     <div class="bg-info bg-opacity-10 p-3 rounded-circle d-inline-flex mb-3">
                                         <i class="ri-search-line text-info" style="font-size: 1.5rem;"></i>

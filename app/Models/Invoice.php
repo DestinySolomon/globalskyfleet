@@ -31,6 +31,7 @@ class Invoice extends Model
         'invoice_date' => 'date',
         'due_date' => 'date',
         'items' => 'array',
+        'user_id' => 'integer',
     ];
 
     protected $appends = [

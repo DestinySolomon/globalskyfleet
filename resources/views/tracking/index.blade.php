@@ -129,7 +129,7 @@
                                         <h6 class="text-muted mb-2">Estimated Delivery</h6>
                                         <h4 class="fw-bold mb-0">
                                             @if($shipment->estimated_delivery)
-                                                {{ $shipment->estimated_delivery->format('M d, Y') }}
+                                                {{ formatUserTime($shipment->estimated_delivery, 'M d, Y') }}
                                             @else
                                                 N/A
                                             @endif
@@ -160,7 +160,7 @@
                                                 {{ ucwords(str_replace('_', ' ', $history->status)) }}
                                             </h6>
                                             <small class="text-muted">
-                                                {{ $history->scan_datetime->format('M d, Y h:i A') }}
+                                                {{ formatUserTime($history->scan_datetime, 'M d, Y h:i A') }}
                                             </small>
                                         </div>
                                         <p class="mb-1">

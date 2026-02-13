@@ -171,7 +171,7 @@
                                     <td>
                                         <div class="d-flex flex-column">
                                             <span class="fw-semibold">{{ $payment->created_at->format('M d, Y') }}</span>
-                                            <small class="text-muted">{{ $payment->created_at->format('h:i A') }}</small>
+                                            <small class="text-muted">{{ formatUserTime($payment->created_at, 'h:i A') }}</small>
                                         </div>
                                     </td>
                                     <td>

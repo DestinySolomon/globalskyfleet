@@ -43,7 +43,7 @@
                             <option value="">Select a shipment</option>
                             @foreach($shipments as $shipment)
                             <option value="{{ $shipment->id }}" {{ old('shipment_id') == $shipment->id ? 'selected' : '' }}>
-                                {{ $shipment->tracking_number }} - Created {{ $shipment->created_at->format('M d, Y') }}
+                                {{ $shipment->tracking_number }} - Created {{ formatUserTime($shipment->created_at, 'M d, Y') }}
                             </option>
                             @endforeach
                         </select>

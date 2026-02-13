@@ -220,9 +220,9 @@
                                             <p class="mb-2">{{ $data['message'] ?? '' }}</p>
                                             
                                             @if(isset($data['url']) && $data['url'] != '#')
-                                                <a href="{{ $data['url'] }}" class="btn btn-sm btn-outline-primary">
+                                                {{-- <a href="{{ $data['url'] }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="ri-external-link-line me-1"></i> View Details
-                                                </a>
+                                                </a> --}}
                                             @endif
                                             
                                             @if($notification->shipment_id)

@@ -12,7 +12,7 @@
                     <div>
                         <h4 class="mb-1">Shipment #{{ $shipment->tracking_number }}</h4>
                         <p class="text-muted mb-0">
-                            Created: {{ $shipment->created_at->format('F d, Y') }}
+                            Created: {{ formatUserTime($shipment->created_at, 'F d, Y') }}
                         </p>
                     </div>
                     <span class="badge 
@@ -64,7 +64,7 @@
                         <p class="mb-0">
                             <strong>
                                 @if($shipment->estimated_delivery)
-                                    {{ $shipment->estimated_delivery->format('M d, Y') }}
+                                    {{ formatUserTime($shipment->estimated_delivery, 'M d, Y') }}
                                 @else
                                     N/A
                                 @endif

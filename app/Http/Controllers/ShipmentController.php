@@ -6,6 +6,7 @@ use App\Models\Shipment;
 use App\Models\Address;
 use App\Models\ShipmentStatusHistory;
 use App\Models\Service;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -93,23 +94,123 @@ class ShipmentController extends Controller
 
     public function create()
     {
-        $addresses = Auth::user()->addresses()
-            ->where('type', 'shipping')
-            ->orWhere('type', 'both')
-            ->get();
+        $user = Auth::user();
         
+        // Get billing addresses for sender
+        $senderAddresses = $user->addresses()
+            ->where('type', 'billing')
+            ->get(['id', 'contact_name', 'address_line1', 'city', 'state', 'country_code']);
+        
+        // Get shipping addresses for recipient
+        $recipientAddresses = $user->addresses()
+            ->where('type', 'shipping')
+            ->get(['id', 'contact_name', 'address_line1', 'city', 'state', 'country_code']);
+        
+        // Update services to match your actual database services
         $services = [
-            'express' => 'Express Delivery (1-3 days)',
-            'economy' => 'Economy Shipping (5-7 days)',
-            'standard' => 'Standard (3-5 days)',
+            'express' => 'Express Delivery (2-5 days) - Fastest',
+            'economy' => 'Economy Shipping (5-10 days) - Most Economical',
+            'freight' => 'Freight Service (7-14 days) - Heavy Cargo',
+            'documents' => 'Document Delivery (3-7 days) - Secure',
         ];
         
-        return view('shipments.create', compact('addresses', 'services'));
+        return view('shipments.create', compact('senderAddresses', 'recipientAddresses', 'services'));
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // First, let's debug what we're receiving
+        Log::channel('production')->info('Shipment creation request', [
+            'user_id' => Auth::id(),
+            'service_type' => $request->service_type,
+            'all_data' => $request->except(['_token', 'payment_proof'])
+        ]);
+        
+        // Map form service_type to database service codes
+        $serviceMap = [
+            'express' => 'EXP',      // Express service
+            'economy' => 'ECO',      // Economy service  
+            'freight' => 'FRT',      // Freight service
+            'documents' => 'DOC',    // Documents service
+        ];
+        
+        // Get the service code based on form input
+        $serviceCode = $serviceMap[$request->service_type] ?? 'ECO'; // Default to Economy
+        
+        Log::channel('production')->info('Service code mapped', [
+            'requested_service' => $request->service_type,
+            'mapped_code' => $serviceCode
+        ]);
+        
+        // Find service by code
+        $service = Service::where('code', $serviceCode)->first();
+        
+        Log::channel('production')->info('Service lookup result', [
+            'service_code' => $serviceCode,
+            'service_found' => $service ? 'yes' : 'no',
+            'service_id' => $service ? $service->id : null
+        ]);
+        
+        if (!$service) {
+            Log::channel('production')->error('Service not found in database', [
+                'requested_code' => $serviceCode,
+                'available_services' => Service::pluck('code', 'id')->toArray()
+            ]);
+            return redirect()->back()
+                ->with('error', 'Shipping service not available. Please contact support.')
+                ->withInput();
+        }
+        
+        // Check weight limits (both minimum and maximum)
+        $weight = $request->weight;
+        $minWeight = $service->min_weight ?? 0.1;
+        $maxWeight = $service->max_weight;
+        
+        if ($weight < $minWeight) {
+            Log::channel('production')->warning('Weight below service minimum', [
+                'user_id' => Auth::id(),
+                'requested_weight' => $weight,
+                'service_code' => $service->code,
+                'service_min_weight' => $minWeight
+            ]);
+            
+            $errorMessage = "Package Too Light for {$service->name}\n\n" .
+                "Your package weighs {$weight}kg, but {$service->name} requires a minimum of {$minWeight}kg.\n\n" .
+                "Suggested solutions:\n" .
+                "• Try a different service type\n" .
+                "• Combine with other items to reach {$minWeight}kg\n" .
+                "• Contact support for alternatives";
+            
+            return redirect()->back()
+                ->with('error', $errorMessage)
+                ->withInput();
+        }
+        
+        if ($weight > $maxWeight) {
+            Log::channel('production')->warning('Weight exceeds service limit', [
+                'user_id' => Auth::id(),
+                'requested_weight' => $weight,
+                'service_code' => $service->code,
+                'service_max_weight' => $maxWeight
+            ]);
+            
+            $errorMessage = "Package Too Heavy for {$service->name}\n\n" .
+                "Your package weighs {$weight}kg, but {$service->name} has a maximum limit of {$maxWeight}kg.\n\n" .
+                "Suggested solutions:\n" .
+                "• Use the Freight Service for heavy packages (up to 2000kg)\n" .
+                "• Split into multiple shipments\n" .
+                "• Contact support for specialized shipping options";
+            
+            return redirect()->back()
+                ->with('error', $errorMessage)
+                ->withInput();
+        }
+        
+        $validator = Validator::make(array_merge($request->all(), [
+            'service_id' => $service->id,
+            'dimensions_unit' => 'cm',
+            'currency' => 'USD'
+        ]), [
             'service_id' => ['required', 'exists:services,id'],
             'sender_address_id' => [
                 'required',
@@ -124,27 +225,30 @@ class ShipmentController extends Controller
                     $query->where('user_id', Auth::id());
                 })
             ],
-            'weight' => ['required', 'numeric', 'min:0.1', 'max:1000'],
-            'dimensions_length' => ['required', 'numeric', 'min:1', 'max:500'],
-            'dimensions_width' => ['required', 'numeric', 'min:1', 'max:500'],
-            'dimensions_height' => ['required', 'numeric', 'min:1', 'max:500'],
+            'weight' => ['required', 'numeric', 'min:0.1', 'max:' . $service->max_weight],
+            'dimensions_length' => ['nullable', 'numeric', 'min:1', 'max:500'],
+            'dimensions_width' => ['nullable', 'numeric', 'min:1', 'max:500'],
+            'dimensions_height' => ['nullable', 'numeric', 'min:1', 'max:500'],
             'dimensions_unit' => ['required', 'in:cm,in'],
             'declared_value' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'currency' => ['required', 'string', 'size:3'],
             'content_description' => ['required', 'string', 'max:500'],
-            'insurance_enabled' => ['boolean'],
-            'insurance_amount' => ['required_if:insurance_enabled,1', 'numeric', 'min:0', 'max:100000'],
-            'requires_signature' => ['boolean'],
-            'is_dangerous_goods' => ['boolean'],
+            'insurance_enabled' => ['nullable', 'boolean'],
+            'insurance_amount' => ['nullable', 'required_if:insurance_enabled,1', 'numeric', 'min:0', 'max:100000'],
+            'requires_signature' => ['nullable', 'boolean'],
+            'is_dangerous_goods' => ['nullable', 'boolean'],
             'special_instructions' => ['nullable', 'string', 'max:1000'],
             'pickup_date' => ['nullable', 'date', 'after_or_equal:today'],
         ]);
 
         if ($validator->fails()) {
-            Log::warning('Shipment creation validation failed', [
+            Log::channel('production')->warning('Shipment creation validation failed', [
                 'user_id' => Auth::id(),
                 'ip' => $request->ip(),
-                'errors' => $validator->errors()->all()
+                'errors' => $validator->errors()->all(),
+                'error_details' => $validator->errors()->toArray(),
+                'service_id' => $service->id,
+                'service_code' => $service->code
             ]);
             
             return redirect()->back()
@@ -155,39 +259,56 @@ class ShipmentController extends Controller
         $validated = $validator->validated();
 
         try {
+            Log::channel('production')->info('Validation passed, attempting to create shipment', [
+                'user_id' => Auth::id(),
+                'service_id' => $service->id
+            ]);
+
             $shipment = new Shipment();
             $shipment->user_id = Auth::id();
-            $shipment->service_id = $validated['service_id'];
+            $shipment->service_id = $service->id;
             $shipment->sender_address_id = $validated['sender_address_id'];
             $shipment->recipient_address_id = $validated['recipient_address_id'];
             $shipment->weight = $validated['weight'];
-            $shipment->dimensions = json_encode([
-                'length' => $validated['dimensions_length'],
-                'width' => $validated['dimensions_width'],
-                'height' => $validated['dimensions_height'],
-                'unit' => $validated['dimensions_unit']
-            ]);
+            
+            // Handle dimensions
+            if ($request->filled('dimensions_length') && $request->filled('dimensions_width') && $request->filled('dimensions_height')) {
+                $shipment->dimensions = json_encode([
+                    'length' => $validated['dimensions_length'],
+                    'width' => $validated['dimensions_width'],
+                    'height' => $validated['dimensions_height'],
+                    'unit' => $validated['dimensions_unit']
+                ]);
+            }
+            
             $shipment->declared_value = $validated['declared_value'];
             $shipment->currency = $validated['currency'];
             $shipment->content_description = strip_tags($validated['content_description']);
-            $shipment->insurance_enabled = $validated['insurance_enabled'] ?? false;
-            $shipment->insurance_amount = $validated['insurance_amount'] ?? 0;
-            $shipment->requires_signature = $validated['requires_signature'] ?? false;
-            $shipment->is_dangerous_goods = $validated['is_dangerous_goods'] ?? false;
-            $shipment->special_instructions = isset($validated['special_instructions']) 
+            $shipment->insurance_enabled = $request->boolean('insurance_enabled');
+            $shipment->insurance_amount = $shipment->insurance_enabled ? ($validated['insurance_amount'] ?? $validated['declared_value']) : 0;
+            $shipment->requires_signature = $request->boolean('requires_signature');
+            $shipment->is_dangerous_goods = $request->boolean('is_dangerous_goods');
+            $shipment->special_instructions = $request->filled('special_instructions') 
                 ? strip_tags($validated['special_instructions']) 
                 : null;
             $shipment->pickup_date = $validated['pickup_date'] ?? null;
             $shipment->status = 'pending';
             
-            $service = Service::find($validated['service_id']);
-            if ($service && $service->estimated_days) {
-                $shipment->estimated_delivery = now()->addDays($service->estimated_days);
+            // Set estimated delivery based on service transit times
+            if ($service->transit_time_min && $service->transit_time_max) {
+                $avgTransitDays = ceil(($service->transit_time_min + $service->transit_time_max) / 2);
+                $shipment->estimated_delivery = now()->addDays($avgTransitDays);
             }
             
             $shipment->save();
 
-            // Create initial status history
+            Log::channel('production')->info('Shipment saved to database', [
+                'shipment_id' => $shipment->id,
+                'tracking_number' => $shipment->tracking_number,
+                'user_id' => Auth::id(),
+            ]);
+
+            // Create status history
             $shipment->statusHistory()->create([
                 'status' => 'pending',
                 'location' => 'System',
@@ -195,23 +316,25 @@ class ShipmentController extends Controller
                 'scan_datetime' => now(),
             ]);
 
-            // 🔥 TRIGGER EVENTS FOR NOTIFICATIONS
-            // Trigger ShipmentCreated event
+            // Create invoice
+            $invoice = $this->createInvoiceForShipment($shipment, $service);
+
+            // Trigger events
             event(new ShipmentCreated($shipment));
-            
-            // Trigger ShipmentStatusUpdated event for initial status
             event(new ShipmentStatusUpdated($shipment, '', 'pending'));
 
             Log::channel('security')->info('Shipment created successfully', [
                 'user_id' => Auth::id(),
                 'shipment_id' => $shipment->id,
                 'tracking_number' => $shipment->tracking_number,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
+                'invoice_id' => $invoice->id,
+                'service' => $service->name,
+                'ip' => $request->ip()
             ]);
 
-            return redirect()->route('shipments.show', $shipment)
-                ->with('success', 'Shipment created successfully! Your tracking number is: ' . $shipment->tracking_number);
+            // Redirect to payment page
+           return redirect()->route('billing.pay', ['invoice' => $invoice->id])
+                ->with('success', 'Shipment created successfully! Your tracking number is: ' . $shipment->tracking_number . '. Please pay the invoice to proceed.');
 
         } catch (\Exception $e) {
             Log::error('Shipment creation failed', [
@@ -221,14 +344,165 @@ class ShipmentController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'Failed to create shipment. Please try again.')
+                ->with('error', 'Failed to create shipment: ' . $e->getMessage())
                 ->withInput();
         }
     }
 
+    /**
+     * Create invoice for a shipment
+     * GLOBAL MINIMUM: $500 for all services
+     */
+    private function createInvoiceForShipment(Shipment $shipment, Service $service)
+    {
+        // Calculate price based on service type
+        $weight = $shipment->weight;
+        $basePrice = 0;
+        
+        // Pricing based on your service types
+        // Note: Individual minimums are still used for calculation, 
+        // but a global $500 minimum is enforced at the end
+        switch($service->code) {
+            case 'EXP': // Express
+                $ratePerKg = 25;  // $25 per kg for Express
+                $basePrice = $weight * $ratePerKg;
+                $minimum = 500;   // Minimum $500 for Express
+                break;
+                
+            case 'ECO': // Economy
+                $ratePerKg = 12;  // $12 per kg for Economy
+                $basePrice = $weight * $ratePerKg;
+                $minimum = 500;   // Minimum $500 for Economy
+                break;
+                
+            case 'FRT': // Freight
+                $ratePerKg = 8;   // $8 per kg for Freight
+                $basePrice = $weight * $ratePerKg;
+                $minimum = 500;   // Minimum $500 for Freight
+                break;
+                
+            case 'DOC': // Documents
+                $basePrice = 15;  // Flat $15 for documents (before minimum)
+                $minimum = 500;   // Minimum $500 for Documents
+                break;
+                
+            default:
+                $ratePerKg = 15;
+                $basePrice = $weight * $ratePerKg;
+                $minimum = 500;   // Minimum $500 for any other service
+        }
+        
+        // Apply service minimum charge
+        if ($basePrice < $minimum) {
+            $basePrice = $minimum;
+        }
+        
+        // Add insurance if enabled
+        $insuranceFee = 0;
+        if ($shipment->insurance_enabled && $shipment->insurance_amount > 0) {
+            $insuranceFee = $shipment->insurance_amount * 0.03; // 3% insurance fee
+            $basePrice += $insuranceFee;
+        }
+        
+        // Add signature fee
+        $signatureFee = 0;
+        if ($shipment->requires_signature) {
+            $signatureFee = 20;
+            $basePrice += $signatureFee;
+        }
+        
+        // Add dangerous goods fee
+        $dangerousGoodsFee = 0;
+        if ($shipment->is_dangerous_goods) {
+            $dangerousGoodsFee = 75;
+            $basePrice += $dangerousGoodsFee;
+        }
+        
+        // Generate invoice number
+        $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        
+        // Create invoice items array
+        $items = [];
+        
+        // Main shipping service item
+        $items[] = [
+            'description' => $service->name . ' shipping for ' . $weight . 'kg',
+            'quantity' => 1,
+            'unit_price' => round($basePrice - $insuranceFee - $signatureFee - $dangerousGoodsFee, 2),
+            'amount' => round($basePrice - $insuranceFee - $signatureFee - $dangerousGoodsFee, 2)
+        ];
+        
+        // Add insurance item if applicable
+        if ($insuranceFee > 0) {
+            $items[] = [
+                'description' => 'Insurance coverage ($' . number_format($shipment->insurance_amount, 2) . ')',
+                'quantity' => 1,
+                'unit_price' => round($insuranceFee, 2),
+                'amount' => round($insuranceFee, 2)
+            ];
+        }
+        
+        // Add signature service if applicable
+        if ($signatureFee > 0) {
+            $items[] = [
+                'description' => 'Signature on delivery',
+                'quantity' => 1,
+                'unit_price' => round($signatureFee, 2),
+                'amount' => round($signatureFee, 2)
+            ];
+        }
+        
+        // Add dangerous goods handling if applicable
+        if ($dangerousGoodsFee > 0) {
+            $items[] = [
+                'description' => 'Dangerous goods handling fee',
+                'quantity' => 1,
+                'unit_price' => round($dangerousGoodsFee, 2),
+                'amount' => round($dangerousGoodsFee, 2)
+            ];
+        }
+        
+        // Calculate total before global minimum
+        $totalAmount = array_sum(array_column($items, 'amount'));
+        
+        // ENFORCE GLOBAL MINIMUM OF $500
+        // This ensures NO invoice is less than $500, regardless of service
+        $globalMinimum = 500;
+        if ($totalAmount < $globalMinimum) {
+            // Add a minimum charge adjustment line item
+            $adjustmentAmount = $globalMinimum - $totalAmount;
+            $items[] = [
+                'description' => 'Minimum service charge',
+                'quantity' => 1,
+                'unit_price' => round($adjustmentAmount, 2),
+                'amount' => round($adjustmentAmount, 2)
+            ];
+            $totalAmount = $globalMinimum;
+        }
+        
+        // Create invoice
+        $invoice = Invoice::create([
+            'user_id' => $shipment->user_id,
+            'invoice_number' => $invoiceNumber,
+            'amount' => round($totalAmount, 2),
+            'currency' => $shipment->currency,
+            'description' => 'Shipping Service - ' . $service->name . ' - Tracking #' . $shipment->tracking_number,
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(7),
+            'status' => 'pending',
+            'items' => json_encode($items),
+        ]);
+        
+        // Link shipment to invoice
+        $shipment->invoice_id = $invoice->id;
+        $shipment->save();
+        
+        return $invoice;
+    }
+
     public function show(Request $request, Shipment $shipment)
     {
-        if ($shipment->user_id !== Auth::id()) {
+        if ($shipment->user_id != Auth::id()) {
             Log::warning('Unauthorized shipment access attempt', [
                 'user_id' => Auth::id(),
                 'attempted_shipment_id' => $shipment->id,
@@ -240,9 +514,9 @@ class ShipmentController extends Controller
         }
 
         $shipment->load([
-            'senderAddress:id,name,address_line1,address_line2,city,state,country,postal_code,phone',
-            'recipientAddress:id,name,address_line1,address_line2,city,state,country,postal_code,phone',
-            'service:id,name,description,estimated_days',
+            'senderAddress:id,contact_name,contact_phone,company,address_line1,address_line2,city,state,postal_code,country_code',
+            'recipientAddress:id,contact_name,contact_phone,company,address_line1,address_line2,city,state,postal_code,country_code',
+            'service:id,name,description,transit_time_min,transit_time_max',
             'statusHistory' => function($query) {
                 $query->select(['id', 'shipment_id', 'status', 'location', 'description', 'scan_datetime'])
                       ->orderBy('scan_datetime', 'desc');
@@ -261,7 +535,7 @@ class ShipmentController extends Controller
 
     public function edit(Request $request, Shipment $shipment)
     {
-        if ($shipment->user_id !== Auth::id()) {
+        if ($shipment->user_id != Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -281,7 +555,7 @@ class ShipmentController extends Controller
 
     public function update(Request $request, Shipment $shipment)
     {
-        if ($shipment->user_id !== Auth::id()) {
+        if ($shipment->user_id != Auth::id()) {
             Log::warning('Unauthorized shipment update attempt', [
                 'user_id' => Auth::id(),
                 'shipment_id' => $shipment->id,
@@ -360,7 +634,7 @@ class ShipmentController extends Controller
 
     public function cancel(Request $request, Shipment $shipment)
     {
-        if ($shipment->user_id !== Auth::id()) {
+        if ($shipment->user_id != Auth::id()) {
             abort(403);
         }
 
@@ -419,7 +693,7 @@ class ShipmentController extends Controller
 
     public function destroy(Request $request, Shipment $shipment)
     {
-        if ($shipment->user_id !== Auth::id()) {
+        if ($shipment->user_id != Auth::id()) {
             Log::warning('Unauthorized shipment deletion attempt', [
                 'user_id' => Auth::id(),
                 'shipment_id' => $shipment->id,
@@ -462,7 +736,7 @@ class ShipmentController extends Controller
     public function track(Request $request)
     {
         if ($request->isMethod('get') && !$request->has('tracking_number')) {
-            return view('tracking.index');
+            return view('pages.tracking');
         }
 
         $validator = Validator::make($request->all(), [
@@ -470,7 +744,7 @@ class ShipmentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::channel('tracking')->warning('Invalid tracking number format', [
+            Log::channel('production')->warning('Invalid tracking number format', [
                 'tracking_number' => $request->tracking_number,
                 'ip' => $request->ip()
             ]);
@@ -481,10 +755,12 @@ class ShipmentController extends Controller
 
         $trackingNumber = strtoupper(trim($request->tracking_number));
         
-        $shipment = Shipment::where('tracking_number', $trackingNumber)->first();
+        $shipment = Shipment::where('tracking_number', $trackingNumber)
+            ->with(['senderAddress', 'recipientAddress', 'service', 'statusHistory'])
+            ->first();
 
         if (!$shipment) {
-            Log::channel('tracking')->warning('Tracking number not found', [
+            Log::channel('production')->warning('Tracking number not found', [
                 'tracking_number' => $trackingNumber,
                 'ip' => $request->ip()
             ]);
@@ -493,26 +769,14 @@ class ShipmentController extends Controller
                 ->with('error', 'Tracking number not found. Please check and try again.');
         }
 
-        $trackingData = [
-            'tracking_number' => $shipment->tracking_number,
-            'status' => $shipment->status,
-            'current_location' => $shipment->current_location,
-            'estimated_delivery' => $shipment->estimated_delivery,
-            'last_updated' => $shipment->updated_at,
-            'history' => $shipment->statusHistory()
-                ->select(['status', 'location', 'description', 'scan_datetime'])
-                ->orderBy('scan_datetime', 'desc')
-                ->get()
-        ];
-
-        Log::channel('tracking')->info('Public tracking accessed', [
+        Log::channel('production')->info('Public tracking accessed', [
             'tracking_number' => $trackingNumber,
             'status' => $shipment->status,
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent()
         ]);
 
-        return view('tracking.public', compact('trackingData'));
+        return view('pages.tracking', compact('shipment'));
     }
 
     public function getStats()

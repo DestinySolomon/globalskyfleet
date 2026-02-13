@@ -57,7 +57,7 @@
                                 </span>
                             </p>
                             <p class="mb-0"><span class="text-muted">Submitted:</span> 
-                                {{ $payment->created_at->format('M d, Y - h:i A') }}
+                                {{ formatUserTime($payment->created_at, 'M d, Y - h:i A') }}
                             </p>
                         </div>
                     </div>

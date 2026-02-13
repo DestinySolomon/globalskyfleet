@@ -64,7 +64,7 @@
                                         </tr>
                                         <tr>
                                             <th>Created:</th>
-                                            <td>{{ $wallet->created_at->format('M d, Y H:i') }}</td>
+                                            <td>{{ formatUserTime($wallet->created_at, 'M d, Y H:i') }}</td></td>
                                         </tr>
                                         <tr>
                                             <th>Created By:</th>
